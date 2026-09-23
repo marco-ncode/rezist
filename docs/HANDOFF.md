@@ -10,7 +10,7 @@ Live snapshot of "where things actually stand," updated at the end of every work
 
 Milestone **M0 is complete**: the full documentation set, all data files + schemas, and a 90+ item backlog exist. Milestone **M1 (vertical slice) is partially complete**: the core engine and a genuinely playable single mission exist in code. Work is currently on the **`dev` branch** (the original PR to `main` was closed per request without merging — see `AGENTS.md`/git log for the merge commit).
 
-**CI exists and is active** (`.github/workflows/ci.yml`). It was briefly removed and then restored within the same session at the owner's request — see git history on `dev` if that back-and-forth needs tracing, it doesn't affect current state. Both real bugs CI caught (see "CI / Build Status" below) are now fixed; the fix has not yet been confirmed by an actual green CI run as of this update. A few M1 checklist items (Main Menu, Mission Prep/deployment screen, danger indicator) also remain open regardless.
+**CI exists, is active, and is confirmed green** (`.github/workflows/ci.yml`, commit `dd680cf`: both jobs pass, 29/29 test assertions pass). It was briefly removed and then restored within the same session at the owner's request — see git history on `dev` if that back-and-forth needs tracing, it doesn't affect current state. See "CI / Build Status" below for the full story and one benign log quirk worth knowing about. A few M1 checklist items (Main Menu, Mission Prep/deployment screen, danger indicator) also remain open regardless.
 
 ### What's actually implemented (code exists, matches its docs)
 
@@ -74,20 +74,21 @@ The authoring session had no network access to fetch the Godot binary, so none o
    - `game/data_runtime/UnitData.gd` — `get_class()` shadowed the native `Object.get_class()`, a fatal compile error that cascaded into `CombatResolver`, `BreachAbility`, `AbilityRegistry`, `DataLoader` all failing to load. **Fixed:** renamed to `get_unit_class()`, call sites updated (`Squad.gd`, `MissionController.gd`).
    - `game/core/combat/CombatResolver.gd` — the `staggered` local failed Godot's static type inference. **Fixed:** added an explicit `: bool` annotation.
 
-**Not yet confirmed:** whether a fresh CI run on the current `dev` head is fully green — these fixes haven't been observed passing in an actual CI run yet, only reasoned through by hand. This is the immediate next thing to check.
+**Confirmed:** CI run on `dev` commit `dd680cf` is fully green — both jobs pass, and the test job reports `Passed: 29  Failed: 0`. This is the first time this codebase has been confirmed to actually run correctly in a real Godot engine.
+
+**One benign log quirk, worth knowing about:** right after the "Passed: 29 Failed: 0" summary, the log shows `SCRIPT ERROR: Assertion failed: DataLoader: ability 'focused_volley' declares effect 'focused_ranged_burst' with no registered implementation` — this is `DataLoader._validate_ability_implementations()` (ARCHITECTURE.md §6) doing exactly what it's documented to do (Focused Volley genuinely has no `Ability` subclass yet, RZ-048). It doesn't fail the job because **`assert()` in GDScript only halts execution when a debugger is attached** — outside the editor (headless, or an exported build) it just logs and continues. This means ARCHITECTURE.md §6's "DataLoader fails boot if not" is currently aspirational, not actually enforced outside the editor. Worth a real fix later (e.g. `push_error` + explicit early exit, or moving the check into a test) if RZ-048 stays unimplemented for a while and someone wants a build that hard-fails on this rather than silently continuing — not urgent since the vertical slice never activates Focused Volley (only Riot squads spawn).
 
 **Command reference (also in `README.md`):**
 ```
 godot --headless --path game --import
 godot --headless --path game --script res://tests/run_tests.gd
 ```
-Update this section once a CI run (or a manual run of the two commands above) confirms all tests pass, and note it in `docs/CHANGELOG.md`.
 
 ## Next 3 Tasks (recommended order)
 
-1. **Confirm CI is fully green on `dev`** (see "CI / Build Status" above) — if anything still fails, fix it next; only then open the project in the editor and actually play the vertical slice mission.
-2. **RZ-075 — Mission Prep screen**, so squads are player-deployed instead of auto-placed; this is the last real gap in the GDD's described mission structure (GDD §9) that's still missing from the playable loop.
-3. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
+1. **RZ-075 — Mission Prep screen**, so squads are player-deployed instead of auto-placed; this is the last real gap in the GDD's described mission structure (GDD §9) that's still missing from the playable loop.
+2. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
+3. Open the project in the actual Godot editor and playtest the vertical slice mission by eye (CI proves the code *compiles and the unit tests pass*, not that the mission *feels* right — that still needs a human or a screenshot-driven agent pass).
 
 ## Known Simplifications (intentional, not bugs)
 

@@ -30,7 +30,7 @@ Milestones, in order. Each has explicit completion criteria — a milestone is "
 - [ ] Mission win/lose conditions implemented and reachable
 - [ ] Minimal HUD: squad selector, ability button, wave indicator
 - [ ] Placeholder audio hooked to at least 5 gameplay events
-- [ ] `tests/` cover pathfinding + combat RPS rules, passing in CI
+- [x] `tests/` cover pathfinding + combat RPS rules, passing in CI
 
 ## M2 — Run Systems (campaign, economy, permadeath, save/load)
 
@@ -69,7 +69,7 @@ Milestones, in order. Each has explicit completion criteria — a milestone is "
 
 **Goal:** automated confidence on every push, exportable builds.
 
-- [ ] CI: data validation + unit tests on every push (baseline exists from M0; pending confirmation the restored pipeline is green after RZ-139/RZ-140 fixes — see `docs/HANDOFF.md`)
+- [x] CI: data validation + unit tests on every push (confirmed green on `dev` commit `dd680cf`, 29/29 test assertions passing)
 - [ ] CI: headless export smoke-build for at least one platform
 - [ ] Versioned export presets, documented build/export command in `README.md`
 - [ ] `docs/CHANGELOG.md` kept current per Keep a Changelog format

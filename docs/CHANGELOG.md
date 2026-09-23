@@ -10,7 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - `game/data_runtime/UnitData.gd` — `get_class()` shadowed the native `Object.get_class()` method, a fatal compile error that cascaded into `CombatResolver`, `BreachAbility`, `AbilityRegistry`, and `DataLoader` all failing to load. Renamed to `get_unit_class()` (and updated its call sites in `Squad.gd`, `MissionController.gd`).
 - `game/core/combat/CombatResolver.gd` — the `staggered` local variable failed Godot's static type inference; added an explicit `: bool` annotation.
 
-Note: the CI pipeline was briefly removed by request and then restored once confirmed to be wanted — see git history on `dev` around commits `333e031`/this one if that back-and-forth needs tracing.
+**CI confirmed green** on `dev` commit `dd680cf`: both jobs pass, 29/29 GDScript test assertions pass — the first time this codebase has been confirmed to run correctly in a real Godot engine. (The pipeline was briefly removed by request and then restored once confirmed to be wanted; see git history on `dev` around commit `333e031` if that back-and-forth needs tracing — it doesn't affect current state.)
 
 ### Added
 - Full M0 documentation set: GDD, TDD, ARCHITECTURE, DECISIONS (ADR-0001..0010), ROADMAP, BACKLOG (90+ tasks), TASKS, CONTRIBUTING, CODE_STYLE, GLOSSARY, BALANCE, ASSET_PIPELINE, DATA_SCHEMA, ART_BIBLE, AUDIO_BIBLE, UX_UI, PLAYTEST_CHECKLIST, ONBOARDING, PERFORMANCE, HANDOFF.
