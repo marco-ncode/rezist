@@ -1,0 +1,12 @@
+{
+  "relics": [
+    { "id": "ied", "name": "IED", "description": "Thrown improvised explosive with a short fuse.", "cost": 20, "effect": "area_damage", "damage": 15, "radius": 1, "fuse_seconds": 2.0 },
+    { "id": "reanimation_kit", "name": "Reanimation Kit", "description": "Revives one fallen commander, once.", "cost": 35, "effect": "revive_commander", "uses": 1 },
+    { "id": "fast_response_vehicle", "name": "Fast Response Vehicle", "description": "This squad can be deployed a second time in the same mission.", "cost": 25, "effect": "redeploy", "extra_deployments": 1 },
+    { "id": "mines", "name": "Mines / Traps", "description": "Placeable traps that damage and stagger zombies on contact.", "cost": 15, "effect": "trap_on_contact", "max_placed": 2, "damage": 10 },
+    { "id": "emergency_fund", "name": "Emergency Fund", "description": "This squad generates bonus gold from every mission it survives.", "cost": 20, "effect": "bonus_gold_per_mission", "bonus_gold": 3 },
+    { "id": "tactical_radio", "name": "Tactical Radio", "description": "Increases this squad's maximum size.", "cost": 25, "effect": "squad_max_size_add", "amount": 1 },
+    { "id": "sledgehammer", "name": "Sledgehammer", "description": "Melee attacks become area-of-effect.", "cost": 20, "effect": "area_damage", "radius": 1, "damage_multiplier": 1.0 },
+    { "id": "flare", "name": "Flare / Air Horn", "description": "Once per mission, calls in instant reinforcements.", "cost": 18, "effect": "instant_reinforcements", "reinforcement_count": 2, "uses_per_mission": 1 }
+  ]
+}

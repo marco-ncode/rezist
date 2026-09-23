@@ -1,0 +1,12 @@
+{
+  "starting_gold": 20,
+  "gold_per_safehouse": 10,
+  "squad_survival_base_gold": 5,
+  "gold_per_surviving_unit": 1,
+  "upgrade_cost": { "l1_to_l2": 12, "l2_to_l3": 20 },
+  "ability_unlock_cost": 15,
+  "trait_discounts": {
+    "collector": { "applies_to": "relic", "mult": 0.5 },
+    "skillful": { "applies_to": "ability", "mult": 0.75 }
+  }
+}

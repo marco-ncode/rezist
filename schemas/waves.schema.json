@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rezist:waves.schema.json",
+  "title": "Wave Sets",
+  "type": "object",
+  "required": ["wave_sets"],
+  "additionalProperties": false,
+  "properties": {
+    "wave_sets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "waves"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "waves": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["index", "start_time", "spawns"],
+              "additionalProperties": false,
+              "properties": {
+                "index": { "type": "integer", "minimum": 1 },
+                "start_time": { "type": "number", "minimum": 0 },
+                "spawns": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["enemy_id", "count", "interval", "entry_point"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "enemy_id": { "type": "string", "minLength": 1 },
+                      "count": { "type": "integer", "minimum": 1 },
+                      "interval": { "type": "number", "minimum": 0 },
+                      "entry_point": { "type": "string", "minLength": 1 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rezist:campaign_nodes.schema.json",
+  "title": "Campaign Node Generation Params",
+  "type": "object",
+  "required": [
+    "node_count_range", "layers_range", "nodes_per_layer_range",
+    "edge_density", "boss_node_layer_from_end", "district_weights"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "node_count_range": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 },
+    "layers_range": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 },
+    "nodes_per_layer_range": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 },
+    "edge_density": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "boss_node_layer_from_end": { "type": "integer", "minimum": 0 },
+    "district_weights": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+    "hero_rescue_node_chance": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

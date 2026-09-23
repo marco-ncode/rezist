@@ -1,0 +1,25 @@
+{
+  "events": [
+    { "id": "order_issued", "bus": "SFX_UI", "description": "Short clean radio-blip on order confirm." },
+    { "id": "unit_attack_melee", "bus": "SFX_Combat", "description": "Sharp physical melee impact." },
+    { "id": "unit_attack_ranged", "bus": "SFX_Combat", "description": "Gunshot / thrown-object whoosh." },
+    { "id": "unit_blocked", "bus": "SFX_Combat", "description": "Distinct metallic shield-block clang." },
+    { "id": "unit_death_ally", "bus": "SFX_Combat", "description": "Short somber ally-death cue." },
+    { "id": "unit_death_enemy", "bus": "SFX_Combat", "description": "Wet/blunt zombie-death cue." },
+    { "id": "commander_died", "bus": "SFX_Combat", "description": "Unmistakable, non-repeating permadeath sting." },
+    { "id": "ability_activated_breach", "bus": "SFX_Combat", "description": "Loud, satisfying Breach cue." },
+    { "id": "ability_on_cooldown_denied", "bus": "SFX_UI", "description": "Soft negative UI tone." },
+    { "id": "safehouse_damaged", "bus": "SFX_Ambience", "description": "Glass break / alarm blip." },
+    { "id": "safehouse_burning", "bus": "SFX_Ambience", "description": "Looping fire crackle, spatialized." },
+    { "id": "safehouse_collapsed", "bus": "SFX_Ambience", "description": "Heavy rubble collapse, one-shot." },
+    { "id": "safehouse_saved", "bus": "SFX_UI", "description": "Short positive chime at mission resolution." },
+    { "id": "wave_incoming", "bus": "Music", "description": "Rising tension stinger + intensity bump." },
+    { "id": "wave_cleared", "bus": "SFX_UI", "description": "Brief tension-release cue." },
+    { "id": "mission_won", "bus": "Music", "description": "Positive resolution stinger." },
+    { "id": "mission_lost", "bus": "Music", "description": "Negative resolution stinger." },
+    { "id": "gold_earned", "bus": "SFX_UI", "description": "Coin-tick per payout unit tallied." },
+    { "id": "upgrade_purchased", "bus": "SFX_UI", "description": "Positive mechanical click-thunk." },
+    { "id": "hero_rescued", "bus": "SFX_UI", "description": "Warm, hopeful rescue cue." },
+    { "id": "entry_point_breached", "bus": "SFX_Ambience", "description": "Low rumble ping, spatialized." }
+  ]
+}

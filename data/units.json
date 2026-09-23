@@ -1,0 +1,59 @@
+{
+  "classes": [
+    {
+      "id": "recruit",
+      "name": "Recruit",
+      "description": "Base survivor, cheap and available from the start. Promotes into a specialized class at level 2.",
+      "levels": [
+        { "level": 1, "hp": 10, "damage": 2, "reach": 1, "attack_type": "melee", "speed": 2.0, "cost": 0 }
+      ],
+      "blocks_ranged_frontal": false,
+      "armor_type": "none",
+      "ability_id": null,
+      "promotes_to": ["riot", "marksman", "barricade"]
+    },
+    {
+      "id": "riot",
+      "name": "Riot",
+      "description": "Tactical/riot squad with frontal shields. Melee tank that blocks ranged damage from the front.",
+      "levels": [
+        { "level": 1, "hp": 14, "damage": 3, "reach": 1, "attack_type": "melee", "speed": 1.6, "cost": 12 },
+        { "level": 2, "hp": 18, "damage": 4, "reach": 1, "attack_type": "melee", "speed": 1.6, "cost": 12 },
+        { "level": 3, "hp": 24, "damage": 6, "reach": 1, "attack_type": "melee", "speed": 1.7, "cost": 20 }
+      ],
+      "blocks_ranged_frontal": true,
+      "armor_type": "shield",
+      "ability_id": "breach",
+      "promotes_to": []
+    },
+    {
+      "id": "marksman",
+      "name": "Marksman",
+      "description": "Ranged specialist. High single-target damage, very weak in melee.",
+      "levels": [
+        { "level": 1, "hp": 8, "damage": 3, "reach": 4, "attack_type": "ranged", "speed": 1.8, "cost": 12 },
+        { "level": 2, "hp": 10, "damage": 5, "reach": 4, "attack_type": "ranged", "speed": 1.8, "cost": 12 },
+        { "level": 3, "hp": 13, "damage": 7, "reach": 5, "attack_type": "ranged", "speed": 1.9, "cost": 20 }
+      ],
+      "blocks_ranged_frontal": false,
+      "armor_type": "none",
+      "ability_id": "focused_volley",
+      "promotes_to": []
+    },
+    {
+      "id": "barricade",
+      "name": "Barricade",
+      "description": "Polearm/reach crew. Anchors chokepoints, strikes before being struck by large melee bodies.",
+      "levels": [
+        { "level": 1, "hp": 12, "damage": 4, "reach": 2, "attack_type": "melee", "speed": 1.4, "cost": 12 },
+        { "level": 2, "hp": 16, "damage": 6, "reach": 2, "attack_type": "melee", "speed": 1.4, "cost": 12 },
+        { "level": 3, "hp": 20, "damage": 9, "reach": 3, "attack_type": "melee", "speed": 1.5, "cost": 20 }
+      ],
+      "blocks_ranged_frontal": false,
+      "armor_type": "reach",
+      "ability_id": "line_charge",
+      "promotes_to": []
+    }
+  ],
+  "squad_base_max_size": 6
+}

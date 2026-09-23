@@ -1,0 +1,8 @@
+{
+  "tiers": [
+    { "id": "easy", "name": "Easy", "enemy_hp_mult": 0.8, "enemy_damage_mult": 0.8, "spawn_count_mult": 0.8, "gold_mult": 1.2, "slow_mo_time_scale": 0.30 },
+    { "id": "normal", "name": "Normal", "enemy_hp_mult": 1.0, "enemy_damage_mult": 1.0, "spawn_count_mult": 1.0, "gold_mult": 1.0, "slow_mo_time_scale": 0.25 },
+    { "id": "hard", "name": "Hard", "enemy_hp_mult": 1.25, "enemy_damage_mult": 1.2, "spawn_count_mult": 1.25, "gold_mult": 0.9, "slow_mo_time_scale": 0.22 },
+    { "id": "very_hard", "name": "Very Hard", "enemy_hp_mult": 1.5, "enemy_damage_mult": 1.4, "spawn_count_mult": 1.5, "gold_mult": 0.8, "slow_mo_time_scale": 0.18 }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "abilities": [
+    {
+      "id": "breach",
+      "name": "Breach",
+      "unit_class": "riot",
+      "unlock_cost": 15,
+      "cooldown_seconds": 12.0,
+      "effect": "plunge_damage_knockback",
+      "min_elevation_delta": 1,
+      "radius": 1,
+      "damage_multiplier": 1.5
+    },
+    {
+      "id": "focused_volley",
+      "name": "Focused Volley",
+      "unit_class": "marksman",
+      "unlock_cost": 15,
+      "cooldown_seconds": 10.0,
+      "effect": "focused_ranged_burst",
+      "radius": 1,
+      "damage_multiplier": 2.0,
+      "ignores_partial_cover": true
+    },
+    {
+      "id": "line_charge",
+      "name": "Line Charge",
+      "unit_class": "barricade",
+      "unlock_cost": 15,
+      "cooldown_seconds": 14.0,
+      "effect": "line_impale_charge",
+      "line_length": 3,
+      "damage_multiplier": 1.3,
+      "knockback_strength": 2
+    }
+  ]
+}

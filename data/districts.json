@@ -1,0 +1,52 @@
+{
+  "districts": [
+    {
+      "id": "residential",
+      "name": "Residential Block",
+      "grid_width": 16,
+      "grid_height": 16,
+      "safehouse_count_range": [2, 4],
+      "entry_point_count_range": [2, 3],
+      "elevation_variance": "low",
+      "enemy_palette_bias": ["walker", "riot_zombie"],
+      "default_wave_set": "district_default_3wave",
+      "biome_id": "urban_core"
+    },
+    {
+      "id": "commercial",
+      "name": "Commercial Strip",
+      "grid_width": 18,
+      "grid_height": 16,
+      "safehouse_count_range": [2, 3],
+      "entry_point_count_range": [2, 4],
+      "elevation_variance": "medium",
+      "enemy_palette_bias": ["walker", "spitter", "thrower"],
+      "default_wave_set": "district_default_3wave",
+      "biome_id": "urban_core"
+    },
+    {
+      "id": "industrial",
+      "name": "Industrial Yard",
+      "grid_width": 18,
+      "grid_height": 18,
+      "safehouse_count_range": [1, 3],
+      "entry_point_count_range": [2, 3],
+      "elevation_variance": "high",
+      "enemy_palette_bias": ["brute", "riot_zombie", "leaper"],
+      "default_wave_set": "district_default_3wave",
+      "biome_id": "industrial_zone"
+    },
+    {
+      "id": "transit_hub",
+      "name": "Transit Hub",
+      "grid_width": 20,
+      "grid_height": 20,
+      "safehouse_count_range": [2, 4],
+      "entry_point_count_range": [3, 5],
+      "elevation_variance": "medium",
+      "enemy_palette_bias": ["spitter", "thrower", "leaper", "brute_spitter", "colossus"],
+      "default_wave_set": "transit_hub_5wave",
+      "biome_id": "underground"
+    }
+  ]
+}

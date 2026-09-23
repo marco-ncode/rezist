@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rezist:districts.schema.json",
+  "title": "Districts",
+  "type": "object",
+  "required": ["districts"],
+  "additionalProperties": false,
+  "properties": {
+    "districts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "name", "grid_width", "grid_height", "safehouse_count_range",
+          "entry_point_count_range", "elevation_variance", "enemy_palette_bias",
+          "default_wave_set", "biome_id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "grid_width": { "type": "integer", "minimum": 4 },
+          "grid_height": { "type": "integer", "minimum": 4 },
+          "safehouse_count_range": {
+            "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2
+          },
+          "entry_point_count_range": {
+            "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2
+          },
+          "elevation_variance": { "enum": ["low", "medium", "high"] },
+          "enemy_palette_bias": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "default_wave_set": { "type": "string", "minLength": 1 },
+          "biome_id": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
