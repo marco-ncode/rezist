@@ -46,7 +46,7 @@ static func resolve_engagement(attacker: Dictionary, defender: Dictionary, conte
 	for trait_id in attacker.get("traits", []):
 		stagger_chance += trait_data.get_modifier(trait_id, "stagger_chance_add", 0.0) if trait_data else 0.0
 
-	var staggered := rng.chance(stagger_chance) and not defender.get("knockback_immune", false)
+	var staggered: bool = rng.chance(stagger_chance) and not defender.get("knockback_immune", false)
 
 	return CombatResult.new(damage, false, staggered, false)
 

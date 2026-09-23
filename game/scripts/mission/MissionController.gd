@@ -265,7 +265,7 @@ func _ease_time_scale(target: float) -> void:
 	tween.tween_property(Engine, "time_scale", target, 0.15)
 
 func _squad_ability_id(squad: Squad) -> String:
-	return DataLoader.units.get_class(squad.unit_class).get("ability_id", "")
+	return DataLoader.units.get_unit_class(squad.unit_class).get("ability_id", "")
 
 func _refresh_hud() -> void:
 	for i in _squads.size():

@@ -10,7 +10,7 @@ Live snapshot of "where things actually stand," updated at the end of every work
 
 Milestone **M0 is complete**: the full documentation set, all data files + schemas, and a 90+ item backlog exist. Milestone **M1 (vertical slice) is partially complete**: the core engine and a genuinely playable single mission exist in code. Work is currently on the **`dev` branch** (the original PR to `main` was closed per request without merging — see `AGENTS.md`/git log for the merge commit).
 
-**No CI pipeline currently exists in this repo.** One was built and briefly ran (see "CI Findings (Historical)" below for what it caught before removal) but was removed at explicit request — this repo is not meant to have CI at this time. A few M1 checklist items (Main Menu, Mission Prep/deployment screen, danger indicator) also remain open regardless.
+**CI exists and is active** (`.github/workflows/ci.yml`). It was briefly removed and then restored within the same session at the owner's request — see git history on `dev` if that back-and-forth needs tracing, it doesn't affect current state. Both real bugs CI caught (see "CI / Build Status" below) are now fixed; the fix has not yet been confirmed by an actual green CI run as of this update. A few M1 checklist items (Main Menu, Mission Prep/deployment screen, danger indicator) also remain open regardless.
 
 ### What's actually implemented (code exists, matches its docs)
 
@@ -51,7 +51,7 @@ python tools/validate_data.py   # → OK
 
 **Tooling:** `tools/validate_data.py` (schema + cross-reference validation), `tools/balance_report.py` (TTK matrices, gold curves — run it, output is sane).
 
-**CI:** none — deliberately removed, see "CI Findings (Historical)" below.
+**CI:** `.github/workflows/ci.yml` — data validation job + headless unit test job (downloads Godot 4.3 in-runner, cached, plus an `--import` warm-up step). See "CI / Build Status" below for current confidence level.
 
 ### What's documented but NOT implemented
 
@@ -64,26 +64,28 @@ python tools/validate_data.py   # → OK
 - **Enemy types beyond the 3 wired into the default wave set** — Spitter, Brute Spitter, Thrower, Leaper, Colossus all have full `data/enemies.json` entries and `EnemyAI` behaviors already support their `behavior` values generically, but no wave_set currently spawns them except `transit_hub_5wave` (unused by the vertical slice's hardcoded `residential` district).
 - **Real art/audio** — 100% primitive placeholder (`ColorRect`s, palette-matched) per ADR-0008/`docs/ASSET_PIPELINE.md`. No audio streams at all yet, only the event pipeline.
 
-## CI Findings (Historical — CI itself is gone, the findings aren't)
+## CI / Build Status
 
-A CI pipeline (`.github/workflows/ci.yml`) was built, ran a handful of times on `dev`, and was then **removed by explicit request** (this repo isn't meant to have CI at this time — see `docs/CHANGELOG.md`). Before removal it was the first time any of this session's GDScript was ever executed by a real Godot engine (the authoring session had no network access to fetch the Godot binary), and it caught real, still-unfixed issues worth preserving here so they aren't rediscovered from scratch:
+The authoring session had no network access to fetch the Godot binary, so none of this code had ever been engine-verified before its first push. Once pushed, CI (which does have network access) found and — in order — these got fixed:
 
-1. **(Fixed, but only in the now-deleted workflow — reapply if CI returns)** `GODOT_VERSION: "4.3.0"` is wrong; Godot tags stable releases as `"4.3"` (no patch component), and `curl` without `-f` silently saved a 404 error page as `godot.zip`. Fix: correct version string, `curl -f` with retries, fallback to the GitHub release asset.
-2. **(Fixed, but only in the now-deleted workflow)** A fresh checkout has no `.godot/global_script_class_cache.cfg`, so a bare `--script` invocation fails to resolve any cross-file `class_name` reference. Fix: run `godot --headless --path game --import` once first (forces the editor's filesystem scan, then quits). `game/tests/run_tests.gd` still has the defense-in-depth `preload()`s from this fix — that part is still in the code.
-3. **NOT fixed — still live bugs in the code right now:**
-   - `game/data_runtime/UnitData.gd:18` — `get_class()` is defined as a method name that **collides with `Object.get_class()`**, a native Godot method. Godot treats this as a fatal compile error ("overrides a method from native class Object... Warning treated as error"), and it cascades: `CombatResolver`, `BreachAbility`, `AbilityRegistry`, `DataLoader` all fail to load as a result. **Fix:** rename `UnitData.get_class(class_id)` to something that doesn't shadow the native method (e.g. `get_unit_class`), and update its ~3-4 call sites (`Squad.gd`, `MissionController.gd`, `AbilityRegistry` lookups if any).
-   - `game/core/combat/CombatResolver.gd:49` — `var staggered := rng.chance(...) and not defender.get(...)` fails Godot's type inference ("Cannot infer the type of 'staggered' variable"). **Fix:** give it an explicit `: bool` type annotation.
-   - With just the `UnitData.get_class()` collision (root cause of the cascade) in the way, the last real test run still got **18/21 assertions passing** — `test_pathfinding.gd` and most of `test_combat_rps.gd`/`test_procgen_determinism.gd` worked; the 3 failures were all `test_economy.gd` cases that depend on constructing a `Squad` (which transitively hits `UnitData.get_class()`), so they're very likely fixed for free once the collision is renamed, not separate bugs.
+1. **Godot download itself was broken.** `GODOT_VERSION: "4.3.0"` is wrong; Godot tags stable releases as `"4.3"` (no patch component), and `curl` lacked `-f` so it silently saved the resulting 404 page as `godot.zip`. Fixed: correct version string, `curl -f` with retries, GitHub-release fallback.
+2. **Global `class_name` resolution failed on a fresh checkout.** A bare `--script` invocation doesn't build `.godot/global_script_class_cache.cfg`. Fixed: CI now runs `godot --headless --path game --import` once first. `game/tests/run_tests.gd` also `preload()`s its four direct test-file dependencies as defense in depth.
+3. **Two real GDScript bugs**, found once the above stopped masking them (last observed run: 18/21 test assertions passing, all 3 failures traceable to bug (a) below):
+   - `game/data_runtime/UnitData.gd` — `get_class()` shadowed the native `Object.get_class()`, a fatal compile error that cascaded into `CombatResolver`, `BreachAbility`, `AbilityRegistry`, `DataLoader` all failing to load. **Fixed:** renamed to `get_unit_class()`, call sites updated (`Squad.gd`, `MissionController.gd`).
+   - `game/core/combat/CombatResolver.gd` — the `staggered` local failed Godot's static type inference. **Fixed:** added an explicit `: bool` annotation.
 
-**Recommended first task for whoever picks this back up:** fix the two live bugs above (small, well-understood, no design ambiguity), then run the two commands below manually to confirm:
+**Not yet confirmed:** whether a fresh CI run on the current `dev` head is fully green — these fixes haven't been observed passing in an actual CI run yet, only reasoned through by hand. This is the immediate next thing to check.
+
+**Command reference (also in `README.md`):**
 ```
 godot --headless --path game --import
 godot --headless --path game --script res://tests/run_tests.gd
 ```
+Update this section once a CI run (or a manual run of the two commands above) confirms all tests pass, and note it in `docs/CHANGELOG.md`.
 
 ## Next 3 Tasks (recommended order)
 
-1. **Fix the two live GDScript bugs** in "CI Findings" above (`UnitData.get_class()` naming collision, `CombatResolver.gd` type inference), then manually verify the full test suite passes and the vertical slice actually runs in the editor — nothing else matters until `game/` genuinely works.
+1. **Confirm CI is fully green on `dev`** (see "CI / Build Status" above) — if anything still fails, fix it next; only then open the project in the editor and actually play the vertical slice mission.
 2. **RZ-075 — Mission Prep screen**, so squads are player-deployed instead of auto-placed; this is the last real gap in the GDD's described mission structure (GDD §9) that's still missing from the playable loop.
 3. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
 

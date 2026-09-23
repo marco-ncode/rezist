@@ -15,13 +15,16 @@ func _init(parsed_json: Dictionary) -> void:
 func has_class(class_id: String) -> bool:
 	return _classes_by_id.has(class_id)
 
-func get_class(class_id: String) -> Dictionary:
+## Named get_unit_class (not get_class) — Object.get_class() is a native
+## Godot method; overriding it is a fatal compile error, not just a
+## style nit (learned the hard way — see docs/HANDOFF.md "CI Findings").
+func get_unit_class(class_id: String) -> Dictionary:
 	assert(has_class(class_id), "Unknown unit class id: %s" % class_id)
 	return _classes_by_id[class_id]
 
 ## Returns the stat dictionary for a class at a given level (1-based).
 func get_level_stats(class_id: String, level: int) -> Dictionary:
-	var class_data := get_class(class_id)
+	var class_data := get_unit_class(class_id)
 	for level_entry in class_data.get("levels", []):
 		if level_entry["level"] == level:
 			return level_entry
@@ -29,7 +32,7 @@ func get_level_stats(class_id: String, level: int) -> Dictionary:
 	return {}
 
 func max_level(class_id: String) -> int:
-	var class_data := get_class(class_id)
+	var class_data := get_unit_class(class_id)
 	var levels: Array = class_data.get("levels", [])
 	return levels.back()["level"] if not levels.is_empty() else 1
 

@@ -67,9 +67,9 @@ Milestones, in order. Each has explicit completion criteria — a milestone is "
 
 ## M5 — CI/CD & Release Hygiene
 
-**Goal:** automated confidence on every push, exportable builds. **On hold:** no CI pipeline is wanted in this repo at this time (explicit request); a working version was built and then removed — see `docs/HANDOFF.md` "CI Findings (Historical)" for the fixes to reuse if this milestone is picked back up.
+**Goal:** automated confidence on every push, exportable builds.
 
-- [ ] CI: data validation + unit tests on every push (a working baseline was built in M0 and then deliberately removed — not currently wanted in this repo)
+- [ ] CI: data validation + unit tests on every push (baseline exists from M0; pending confirmation the restored pipeline is green after RZ-139/RZ-140 fixes — see `docs/HANDOFF.md`)
 - [ ] CI: headless export smoke-build for at least one platform
 - [ ] Versioned export presets, documented build/export command in `README.md`
 - [ ] `docs/CHANGELOG.md` kept current per Keep a Changelog format

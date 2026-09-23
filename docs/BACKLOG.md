@@ -142,8 +142,6 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 
 ## Section G — M5 CI/CD & Release Hygiene
 
-**No CI pipeline currently exists in this repo** — `.github/workflows/ci.yml` was built, ran, then deliberately removed by explicit request (not wanted here at this time; see `docs/CHANGELOG.md`). RZ-136 reverted from Done to Backlog below. If CI is reintroduced, `docs/HANDOFF.md` "CI Findings (Historical)" has two workflow fixes already worked out (Godot version-string bug, `--import` cache warm-up) — reuse them. That section also has two **still-live code bugs** the CI runs caught, tracked here as RZ-139/RZ-140.
-
 | ID | Title | Priority | Size | Deps | Owner | Status |
 |---|---|---|---|---|---|---|
 | RZ-130 | tests/run_tests.gd headless runner | Must | M | RZ-040 | tooling | Done |
@@ -152,11 +150,11 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-133 | test_economy.gd | Must | S | RZ-051,130 | tooling | Done |
 | RZ-134 | test_procgen_determinism.gd | Must | M | RZ-052,130 | tooling | Done |
 | RZ-135 | test_save_load_roundtrip.gd | Must | M | RZ-055,130 | tooling | Backlog |
-| RZ-136 | .github/workflows/ci.yml: data validation + unit tests | Must | M | RZ-032,130 | tooling | Backlog (reverted — see note above) |
+| RZ-136 | .github/workflows/ci.yml: data validation + unit tests | Must | M | RZ-032,130 | tooling | Done |
 | RZ-137 | CI: headless export smoke-build | Should | M | RZ-136 | tooling | Backlog |
 | RZ-138 | Export presets (Windows/Linux/macOS) | Should | S | RZ-137 | tooling | Backlog |
-| RZ-139 | Fix `UnitData.get_class()` naming collision with native `Object.get_class()` | Must | S | RZ-044 | engine | Backlog |
-| RZ-140 | Fix missing type annotation on `staggered` in `CombatResolver.gd:49` | Must | S | RZ-045 | engine | Backlog |
+| RZ-139 | Fix `UnitData.get_class()` naming collision with native `Object.get_class()` | Must | S | RZ-044 | engine | Done |
+| RZ-140 | Fix missing type annotation on `staggered` in `CombatResolver.gd:49` | Must | S | RZ-045 | engine | Done |
 
 ## Section H — Won't (yet) — explicitly deferred, tracked not forgotten
 

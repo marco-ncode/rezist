@@ -33,7 +33,7 @@ func _init(p_id: String, p_commander: Commander, p_unit_class: String, p_level: 
 
 	commander.died.connect(_on_commander_died)
 
-	var class_data := unit_data.get_class(p_unit_class)
+	var class_data := unit_data.get_unit_class(p_unit_class)
 	var level_stats := unit_data.get_level_stats(p_unit_class, p_level)
 	for i in spawn_positions.size():
 		var unit := Unit.new("%s_u%d" % [p_id, i], level_stats, class_data, spawn_positions[i])
