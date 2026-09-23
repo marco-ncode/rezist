@@ -1,0 +1,14 @@
+{
+  "node_count_range": [8, 14],
+  "layers_range": [4, 6],
+  "nodes_per_layer_range": [2, 4],
+  "edge_density": 0.6,
+  "boss_node_layer_from_end": 1,
+  "district_weights": {
+    "residential": 0.4,
+    "commercial": 0.25,
+    "industrial": 0.2,
+    "transit_hub": 0.15
+  },
+  "hero_rescue_node_chance": 0.2
+}

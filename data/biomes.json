@@ -1,0 +1,7 @@
+{
+  "biomes": [
+    { "id": "urban_core", "name": "Urban Core", "tile_palette": "concrete_grey", "ambient_mood": "overcast" },
+    { "id": "industrial_zone", "name": "Industrial Zone", "tile_palette": "rust_brown", "ambient_mood": "hazy" },
+    { "id": "underground", "name": "Underground / Transit", "tile_palette": "cool_fluorescent", "ambient_mood": "low_light" }
+  ]
+}

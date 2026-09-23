@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rezist:economy.schema.json",
+  "title": "Economy",
+  "type": "object",
+  "required": [
+    "starting_gold", "gold_per_safehouse", "squad_survival_base_gold",
+    "gold_per_surviving_unit", "upgrade_cost", "ability_unlock_cost", "trait_discounts"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "starting_gold": { "type": "integer", "minimum": 0 },
+    "gold_per_safehouse": { "type": "integer", "minimum": 0 },
+    "squad_survival_base_gold": { "type": "integer", "minimum": 0 },
+    "gold_per_surviving_unit": { "type": "integer", "minimum": 0 },
+    "ability_unlock_cost": { "type": "integer", "minimum": 0 },
+    "upgrade_cost": {
+      "type": "object",
+      "required": ["l1_to_l2", "l2_to_l3"],
+      "additionalProperties": false,
+      "properties": {
+        "l1_to_l2": { "type": "integer", "minimum": 0 },
+        "l2_to_l3": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "trait_discounts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["applies_to", "mult"],
+        "properties": {
+          "applies_to": { "enum": ["relic", "ability"] },
+          "mult": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "traits": [
+    { "id": "collector", "name": "Collector", "description": "Field gear costs half price for this commander's squad.", "modifiers": { "relic_cost_mult": 0.5 } },
+    { "id": "energetic", "name": "Energetic", "description": "Ability cooldowns are reduced.", "modifiers": { "ability_cooldown_mult": 0.75 } },
+    { "id": "fleet_of_foot", "name": "Fleet of Foot", "description": "Squad moves faster.", "modifiers": { "move_speed_mult": 1.25 } },
+    { "id": "heavy_load", "name": "Heavy Load", "description": "One extra ability use before cooldown is required.", "modifiers": { "ability_extra_uses": 1 } },
+    { "id": "heavy_weapons", "name": "Heavy Weapons", "description": "Attacks apply extra knockback/stagger.", "modifiers": { "stagger_chance_add": 0.25 } },
+    { "id": "ironskin", "name": "Ironskin", "description": "Damage taken is reduced.", "modifiers": { "damage_taken_mult": 0.8 } },
+    { "id": "mountain", "name": "Mountain", "description": "The commander is a giant who fights personally in melee.", "modifiers": { "is_mountain": true, "mountain_hp": 30, "mountain_damage": 8 } },
+    { "id": "popular", "name": "Popular", "description": "This squad's maximum size is increased by 1.", "modifiers": { "squad_max_size_add": 1 } },
+    { "id": "sharp_weapons", "name": "Sharp Weapons", "description": "Attacks deal extra damage.", "modifiers": { "damage_dealt_mult": 1.15 } },
+    { "id": "skillful", "name": "Skillful", "description": "Abilities cost less gold to unlock or use.", "modifiers": { "ability_cost_mult": 0.75 } }
+  ]
+}

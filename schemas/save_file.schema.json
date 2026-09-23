@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rezist:save_file.schema.json",
+  "title": "Run Save File",
+  "type": "object",
+  "required": ["save_version", "seed", "difficulty", "gold", "campaign_state", "commanders"],
+  "additionalProperties": false,
+  "properties": {
+    "save_version": { "type": "integer", "minimum": 1 },
+    "seed": { "type": "integer" },
+    "difficulty": { "type": "string", "minLength": 1 },
+    "gold": { "type": "integer", "minimum": 0 },
+    "campaign_state": {
+      "type": "object",
+      "required": ["visited_nodes", "lost_nodes", "progress_line_layer", "current_node"],
+      "additionalProperties": false,
+      "properties": {
+        "visited_nodes": { "type": "array", "items": { "type": "string" } },
+        "lost_nodes": { "type": "array", "items": { "type": "string" } },
+        "progress_line_layer": { "type": "integer", "minimum": 0 },
+        "current_node": { "type": ["string", "null"] }
+      }
+    },
+    "commanders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "unit_class", "level", "trait_id", "relic_id", "alive", "unit_count"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "unit_class": { "type": "string", "minLength": 1 },
+          "level": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "trait_id": { "type": ["string", "null"] },
+          "relic_id": { "type": ["string", "null"] },
+          "alive": { "type": "boolean" },
+          "unit_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

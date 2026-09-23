@@ -1,0 +1,31 @@
+# Godot 4
+game/.godot/
+game/.import/
+game/export_presets.cfg
+*.translation
+game/builds/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Python tooling
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Test / report output
+tools/reports/
+tests/output/
+
+# Save files (local playtesting)
+game/user/
+*.save
+
+# Logs
+*.log

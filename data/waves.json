@@ -1,0 +1,59 @@
+{
+  "wave_sets": [
+    {
+      "id": "district_default_3wave",
+      "description": "Default 3-wave escalation used by the vertical slice mission and any district without a bespoke wave_set.",
+      "waves": [
+        {
+          "index": 1,
+          "start_time": 5.0,
+          "spawns": [
+            { "enemy_id": "walker", "count": 6, "interval": 1.0, "entry_point": "any" }
+          ]
+        },
+        {
+          "index": 2,
+          "start_time": 45.0,
+          "spawns": [
+            { "enemy_id": "walker", "count": 5, "interval": 0.8, "entry_point": "any" },
+            { "enemy_id": "riot_zombie", "count": 2, "interval": 2.0, "entry_point": "any" }
+          ]
+        },
+        {
+          "index": 3,
+          "start_time": 100.0,
+          "spawns": [
+            { "enemy_id": "walker", "count": 4, "interval": 0.7, "entry_point": "any" },
+            { "enemy_id": "riot_zombie", "count": 2, "interval": 1.8, "entry_point": "any" },
+            { "enemy_id": "brute", "count": 1, "interval": 0.0, "entry_point": "any" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transit_hub_5wave",
+      "description": "Denser, longer wave set for transit_hub districts (more entry points, more ranged pressure).",
+      "waves": [
+        { "index": 1, "start_time": 5.0, "spawns": [
+          { "enemy_id": "walker", "count": 8, "interval": 0.8, "entry_point": "any" }
+        ] },
+        { "index": 2, "start_time": 40.0, "spawns": [
+          { "enemy_id": "walker", "count": 6, "interval": 0.7, "entry_point": "any" },
+          { "enemy_id": "spitter", "count": 3, "interval": 1.5, "entry_point": "any" }
+        ] },
+        { "index": 3, "start_time": 85.0, "spawns": [
+          { "enemy_id": "riot_zombie", "count": 3, "interval": 1.5, "entry_point": "any" },
+          { "enemy_id": "thrower", "count": 2, "interval": 1.5, "entry_point": "any" }
+        ] },
+        { "index": 4, "start_time": 130.0, "spawns": [
+          { "enemy_id": "leaper", "count": 4, "interval": 1.0, "entry_point": "any" },
+          { "enemy_id": "brute_spitter", "count": 1, "interval": 0.0, "entry_point": "any" }
+        ] },
+        { "index": 5, "start_time": 180.0, "spawns": [
+          { "enemy_id": "brute", "count": 2, "interval": 3.0, "entry_point": "any" },
+          { "enemy_id": "colossus", "count": 1, "interval": 0.0, "entry_point": "any" }
+        ] }
+      ]
+    }
+  ]
+}
