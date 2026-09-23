@@ -46,6 +46,7 @@ var _hud: CanvasLayer
 func _ready() -> void:
 	_economy = DataLoader.make_economy()
 	_mission_rng = GameState.make_rng("mission")
+	_district_id = GameState.mission_district_id
 
 	var district_entry := DataLoader.districts.get_district(_district_id)
 	var gen_result := MapGenerator.generate(_mission_rng.derive("map"), district_entry)
@@ -91,8 +92,17 @@ func _spawn_squads() -> void:
 	var commander_names := ["J. Alvarez", "D. Okafor", "M. Torres"]
 	var used_positions: Dictionary = {}
 
+	# RZ-075: prefer the player's chosen deployment tiles from MissionPrep.
+	# Falls back to auto-placement near the first safehouse if Mission.tscn
+	# was loaded directly (e.g. quick manual testing in the editor) without
+	# going through the prep screen.
+	var deployment := GameState.mission_deployment_positions
+	GameState.clear_mission_deployment()
+
 	for i in 3:
-		var spawn_positions := _pick_spawn_positions(center + Vector2i(i - 1, 2), 4, used_positions)
+		var squad_center: Vector2i = deployment[i] if i < deployment.size() and deployment[i] != null \
+			else center + Vector2i(i - 1, 2)
+		var spawn_positions := _pick_spawn_positions(squad_center, 4, used_positions)
 		if spawn_positions.is_empty():
 			continue
 		var commander := Commander.new("cmdr_%d" % i, commander_names[i % commander_names.size()], 20)

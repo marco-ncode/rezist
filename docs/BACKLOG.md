@@ -89,7 +89,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-072 | Hook ≥5 gameplay events to AudioManager (placeholder SFX) | Should | S | RZ-071 | audio | Done |
 | RZ-073 | Placeholder art pass: tiles, units, zombies, safehouses (primitive shapes/colors) | Must | M | RZ-061,065,066 | art | Done |
 | RZ-074 | Main Menu scene (New Run / Continue / Settings / Quit) | Should | S | RZ-060 | ui | Backlog |
-| RZ-075 | Mission Prep screen (deploy squads before wave 1) | Must | M | RZ-062 | ui | Backlog |
+| RZ-075 | Mission Prep screen (deploy squads before wave 1) | Must | M | RZ-062 | ui | Done |
 
 ## Section D — M2 Run Systems
 

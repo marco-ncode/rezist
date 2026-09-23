@@ -35,9 +35,16 @@ python tools/validate_data.py   # → OK
 
 **Autoloads** (`game/autoload/`): `DataLoader` (loads + validates all data at boot, builds `AbilityRegistry`), `AudioManager` (event→bus table, no real audio assets yet), `GameState` (seed/difficulty/gold holder — will be superseded by `RunState` once RZ-054 lands).
 
-**Playable scene** (`game/scenes/Main.tscn` → `Mission.tscn`, `game/scripts/`):
-- Boots straight into a generated `residential` district mission (no Main Menu yet)
-- 3 Riot squads (4 units each) spawn near the first safehouse
+**Mission Prep scene** (`game/scenes/MissionPrep.tscn`, `game/scripts/ui/MissionPrepController.gd`, RZ-075):
+- Regenerates the same mission grid `Mission.tscn` will (same seed + derive key, MapGenerator's determinism contract — no data passed between scenes except the final deployment choice)
+- Highlights a deployment zone (open tiles within 3 tiles of the first safehouse)
+- Player selects each of the 3 squads via a bottom bar button, then clicks a highlighted tile to place it; a tile already taken by another squad is rejected
+- `[Start]` only enables once all 3 squads are placed; hands the chosen tiles to `GameState.mission_deployment_positions` and transitions to `Mission.tscn`
+- No squad roster/army-composition choice yet (still the same 3 hardcoded Riot squads) — that's gated on RZ-054 (RunState)
+
+**Playable scene** (`game/scenes/Main.tscn` → `MissionPrep.tscn` → `Mission.tscn`, `game/scripts/`):
+- Boots into Mission Prep for a generated `residential` district mission (no Main Menu yet)
+- 3 Riot squads (4 units each) spawn at the player's chosen deployment tiles (falls back to auto-placement near the first safehouse if `Mission.tscn` is loaded directly, e.g. for quick manual testing)
 - Click a squad button (or squad, once map-click-to-select is added — currently HUD-button-only) → click a tile → squad paths there, engaging enemies in range automatically
 - Slow-mo eases in on squad selection, out on order confirm (`Engine.time_scale`, per ADR-0004)
 - Breach ability wired to the HUD ability button (arm → click target tile)
@@ -59,7 +66,7 @@ python tools/validate_data.py   # → OK
 - **Traits/relics beyond data** — all 10 traits and 8 relics are fully specified in `data/traits.json`/`data/relics.json` and `CombatResolver`/`Economy` already read trait modifiers generically, but relics have no runtime effect implementation yet (no `RelicEffect` system exists — tracked as RZ-109).
 - **Campaign layer** — `CampaignGenerator`, `CampaignState`, the Campaign Map scene, fog of war, split-the-party: none exist yet (RZ-080/081/082/084). The vertical slice plays exactly one hardcoded district.
 - **Run/meta layer** — `RunState`, `SaveManager`: don't exist yet (RZ-054/055). `GameState` autoload is a deliberately temporary stand-in holding just seed/difficulty/gold.
-- **Main Menu, Mission Prep (deployment), Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-074, RZ-075, RZ-085, RZ-086, RZ-089). `Main.gd` skips straight into a mission with auto-placed squads.
+- **Main Menu, Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-074, RZ-085, RZ-086, RZ-089). `Main.gd` skips straight into Mission Prep. (Mission Prep itself now exists — RZ-075, see above.)
 - **Danger indicator, minimap** — not implemented (RZ-068, RZ-127).
 - **Enemy types beyond the 3 wired into the default wave set** — Spitter, Brute Spitter, Thrower, Leaper, Colossus all have full `data/enemies.json` entries and `EnemyAI` behaviors already support their `behavior` values generically, but no wave_set currently spawns them except `transit_hub_5wave` (unused by the vertical slice's hardcoded `residential` district).
 - **Real art/audio** — 100% primitive placeholder (`ColorRect`s, palette-matched) per ADR-0008/`docs/ASSET_PIPELINE.md`. No audio streams at all yet, only the event pipeline.
@@ -86,9 +93,9 @@ godot --headless --path game --script res://tests/run_tests.gd
 
 ## Next 3 Tasks (recommended order)
 
-1. **RZ-075 — Mission Prep screen**, so squads are player-deployed instead of auto-placed; this is the last real gap in the GDD's described mission structure (GDD §9) that's still missing from the playable loop.
-2. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
-3. Open the project in the actual Godot editor and playtest the vertical slice mission by eye (CI proves the code *compiles and the unit tests pass*, not that the mission *feels* right — that still needs a human or a screenshot-driven agent pass).
+1. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
+2. **RZ-074 — Main Menu scene**, so `Main.gd` stops skipping straight into Mission Prep with a random seed every launch.
+3. Open the project in the actual Godot editor and playtest Mission Prep → Mission by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right — that still needs a human or a screenshot-driven agent pass). In particular: verify deployment-zone tiles are visually distinct enough and that clicking near a tile boundary doesn't feel finicky.
 
 ## Known Simplifications (intentional, not bugs)
 
