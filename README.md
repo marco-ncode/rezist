@@ -55,10 +55,15 @@ godot --headless --path game
 
 ## Running Tests
 
+On a **fresh checkout** (or after pulling changes that touch `.gd` files), warm up Godot's global class cache first — a plain `--script` run fails to resolve `class_name` references otherwise:
+```
+godot --headless --path game --import
+```
+Then run the suite:
 ```
 godot --headless --path game --script res://tests/run_tests.gd
 ```
-Runs the full GDScript unit test suite (`game/tests/`) and exits non-zero on any failure. See `docs/CODE_STYLE.md` for test conventions and ADR-0010 (`docs/DECISIONS.md`) for why tests live inside `game/` rather than at the repo root.
+Runs the full GDScript unit test suite (`game/tests/`) and exits non-zero on any failure. See `docs/CODE_STYLE.md` for test conventions and ADR-0010 (`docs/DECISIONS.md`) for why tests live inside `game/` rather than at the repo root. Opening the project in the editor once (instead of `--import`) has the same warm-up effect.
 
 ## Validating Data
 

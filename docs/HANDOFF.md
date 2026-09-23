@@ -2,13 +2,15 @@
 
 Live snapshot of "where things actually stand," updated at the end of every work session. If this file and `docs/ROADMAP.md` disagree, trust this one for current state and `docs/ROADMAP.md` for the plan. Read this after `docs/ONBOARDING.md` and before picking a task from `docs/TASKS.md`.
 
-**Last updated:** 2026-09-23, end of Session 1 (see `AGENTS.md`).
+**Last updated:** 2026-09-23, Session 1 (see `AGENTS.md`), post-PR follow-up on the `dev` branch.
 
 ---
 
 ## Where We Are
 
-Milestone **M0 is complete**: the full documentation set, all data files + schemas, and a 90+ item backlog exist. Milestone **M1 (vertical slice) is partially complete**: the core engine and a genuinely playable single mission exist in code, but it has **not yet been run inside the actual Godot engine** (see "Biggest Risk" below) and a few M1 checklist items (Main Menu, Mission Prep/deployment screen, danger indicator) are still open.
+Milestone **M0 is complete**: the full documentation set, all data files + schemas, and a 90+ item backlog exist. Milestone **M1 (vertical slice) is partially complete**: the core engine and a genuinely playable single mission exist in code. Work is currently on the **`dev` branch** (the original PR to `main` was closed per request without merging — see `AGENTS.md`/git log for the merge commit).
+
+The code **has now actually been executed by CI** (see "CI / Build Status" below) — two real issues surfaced and were fixed; a third round of CI (verifying the second fix) had not yet reported back as of this update. A few M1 checklist items (Main Menu, Mission Prep/deployment screen, danger indicator) also remain open regardless.
 
 ### What's actually implemented (code exists, matches its docs)
 
@@ -62,19 +64,25 @@ python tools/validate_data.py   # → OK
 - **Enemy types beyond the 3 wired into the default wave set** — Spitter, Brute Spitter, Thrower, Leaper, Colossus all have full `data/enemies.json` entries and `EnemyAI` behaviors already support their `behavior` values generically, but no wave_set currently spawns them except `transit_hub_5wave` (unused by the vertical slice's hardcoded `residential` district).
 - **Real art/audio** — 100% primitive placeholder (`ColorRect`s, palette-matched) per ADR-0008/`docs/ASSET_PIPELINE.md`. No audio streams at all yet, only the event pipeline.
 
-## Biggest Risk / First Thing To Verify
+## CI / Build Status
 
-**The GDScript in this repo has never been executed by the actual Godot engine.** This session's sandboxed environment had no network access to fetch the Godot binary (outbound requests to `downloads.tuxfamily.org` were blocked by the environment's egress policy). Every script was written carefully against documented Godot 4.3 GDScript syntax and cross-checked by hand for consistent APIs across files, but there **will** be at least minor issues (a typo, a signature mismatch, a GDScript 4.x API nuance) that only a real engine run will surface.
+The Claude Code session that wrote the original code had no network access to fetch the Godot binary, so none of it had been engine-verified at first push. Once pushed to GitHub, CI (which does have network access) surfaced two **real** issues, both now fixed on `dev`:
 
-**First recommended action for the next session with Godot available:**
+1. **Godot download itself was broken.** The workflow used `GODOT_VERSION: "4.3.0"`, but Godot tags stable releases as `"4.3"` (no patch component) — the tuxfamily URL 404'd, and `curl` without `-f` silently saved the error page as `godot.zip`, which then failed to unzip. Fixed: correct version string, `curl -f` with retries, fallback to the GitHub release asset.
+2. **Global `class_name` resolution failed on a fresh checkout.** Once Godot actually ran, every cross-file class reference (`TestReporter`, `TacticalGrid`, ...) failed with `Identifier "X" not declared in the current scope`. Root cause: Godot's global script-class lookup table (`.godot/global_script_class_cache.cfg`) is built by a full editor filesystem scan, which a plain `--script` invocation does **not** trigger on a checkout that has never been opened/imported before. Fixed: CI now runs `godot --headless --path game --import` once (a documented Godot flag specifically for this — forces the editor scan, then quits) before `--script res://tests/run_tests.gd`. `game/tests/run_tests.gd` was also changed to `preload()` its four direct test-file dependencies instead of bare global references, as cheap defense in depth (this does **not** cover those test files' own internal references to `core/` classes, which still need the `--import` warm-up).
+
+**Not yet confirmed:** whether the actual test *logic* (pathfinding, combat RPS, economy, procgen determinism) passes once the class-cache issue stops masking it — every previous CI run failed before a single test assertion could execute. This is the next thing to check once a new CI run completes on `dev`, or by running the two commands below locally.
+
+**Command reference (also in `README.md`):**
 ```
+godot --headless --path game --import
 godot --headless --path game --script res://tests/run_tests.gd
 ```
-Fix whatever it reports, then open the project in the editor and actually play the vertical slice mission. Update this section once verified, and note anything fixed in `docs/CHANGELOG.md`.
+Update this section once a CI run gets past the import/parse stage and actually reports pass/fail on all four test files, and note anything further fixed in `docs/CHANGELOG.md`.
 
 ## Next 3 Tasks (recommended order)
 
-1. **Verify and fix the Godot build** (see "Biggest Risk" above) — nothing else matters until `game/` actually runs.
+1. **Confirm CI is fully green on `dev`** (see "CI / Build Status" above) — if the test suite reports real failures (not parse errors) once it runs, fix those next; only then open the project in the editor and actually play the vertical slice mission.
 2. **RZ-075 — Mission Prep screen**, so squads are player-deployed instead of auto-placed; this is the last real gap in the GDD's described mission structure (GDD §9) that's still missing from the playable loop.
 3. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
 

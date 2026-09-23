@@ -64,6 +64,16 @@ jobs:
           mv "/opt/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /opt/godot/godot
           chmod +x /opt/godot/godot
 
+      - name: Import project (warm up global class cache)
+        # On a fresh checkout, Godot's global `class_name` lookup table
+        # (.godot/global_script_class_cache.cfg) doesn't exist yet, and a
+        # plain `--script` invocation does not build it first — every
+        # cross-file class_name reference (TacticalGrid, TestReporter, ...)
+        # then fails to resolve. `--import` runs a full editor
+        # startup/filesystem scan and quits, which is what actually builds
+        # that cache. Must run once, separately, before `--script`.
+        run: /opt/godot/godot --headless --path game --import
+
       - name: Run headless unit tests
         run: /opt/godot/godot --headless --path game --script res://tests/run_tests.gd
 

@@ -122,8 +122,8 @@ Mission-grid generation (`MapGenerator.gd`) then independently generates the act
 
 - `tools/validate_data.py` — validates every `data/*.json` against its `schemas/*.schema.json` using `jsonschema` (Python). Run locally via `python tools/validate_data.py` and in CI on every push.
 - `tools/balance_report.py` — reads `data/*.json` and prints derived tables (effective DPS, TTK matrices, gold-per-minute curves) to help balance tuning without opening the engine. Not authoritative, just a diagnostic aid — see `docs/BALANCE.md`.
-- `game/tests/` — GDScript unit tests executed headlessly: `godot --headless --path game --script res://tests/run_tests.gd` (run from the repo root). See `docs/CONTRIBUTING.md` for the exact command and `docs/CODE_STYLE.md` for test conventions, and ADR-0010 for why tests live inside `game/` rather than at the repo root.
-- CI pipeline (`.github/workflows/ci.yml`): data validation → GDScript unit tests → headless export smoke-build. Full breakdown in that file's comments.
+- `game/tests/` — GDScript unit tests executed headlessly: `godot --headless --path game --script res://tests/run_tests.gd` (run from the repo root). See `docs/CONTRIBUTING.md` for the exact command and `docs/CODE_STYLE.md` for test conventions, and ADR-0010 for why tests live inside `game/` rather than at the repo root. **On a checkout with no `.godot/` cache yet, run `godot --headless --path game --import` once first** — a bare `--script` invocation doesn't build the global `class_name` lookup table, so every cross-file class reference fails to resolve until that warm-up runs (CI does this automatically).
+- CI pipeline (`.github/workflows/ci.yml`): data validation → import warm-up + GDScript unit tests → headless export smoke-build (export smoke-build not yet wired, see RZ-137). Full breakdown in that file's comments.
 
 ---
 
