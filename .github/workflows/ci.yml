@@ -12,7 +12,9 @@ on:
     branches: ["**"]
 
 env:
-  GODOT_VERSION: "4.3.0"
+  # Godot releases are tagged "4.3", not "4.3.0" — the version string used
+  # verbatim in both the download URL and the extracted binary name below.
+  GODOT_VERSION: "4.3"
 
 jobs:
   validate-data:
@@ -48,9 +50,16 @@ jobs:
       - name: Download Godot
         if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
+          set -euo pipefail
           mkdir -p /opt/godot
-          curl -sSL -o /tmp/godot.zip \
-            "https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          ZIP_NAME="Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          # -f makes curl fail (non-zero exit) on an HTTP error instead of
+          # silently saving an error page as if it were the zip. Try the
+          # tuxfamily mirror first, fall back to the GitHub release asset.
+          curl -fsSL --retry 3 --retry-delay 2 -o /tmp/godot.zip \
+            "https://downloads.tuxfamily.org/godotengine/${GODOT_VERSION}/${ZIP_NAME}" \
+            || curl -fsSL --retry 3 --retry-delay 2 -o /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/${ZIP_NAME}"
           unzip -q /tmp/godot.zip -d /opt/godot
           mv "/opt/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /opt/godot/godot
           chmod +x /opt/godot/godot
