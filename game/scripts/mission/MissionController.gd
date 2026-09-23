@@ -105,7 +105,7 @@ func _spawn_squads() -> void:
 		var spawn_positions := _pick_spawn_positions(squad_center, 4, used_positions)
 		if spawn_positions.is_empty():
 			continue
-		var commander := Commander.new("cmdr_%d" % i, commander_names[i % commander_names.size()], 20)
+		var commander := Commander.new("cmdr_%d" % i, commander_names[i % commander_names.size()], Commander.DEFAULT_MAX_HP)
 		var squad := Squad.new("sq_%d" % i, commander, "riot", 1, DataLoader.units, spawn_positions)
 		squad.wiped.connect(_on_squad_wiped.bind(i))
 		squad.commander_lost.connect(_on_commander_exposed)

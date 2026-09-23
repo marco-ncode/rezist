@@ -30,10 +30,11 @@ python tools/validate_data.py   # → OK
 - `waves/EntryPoint.gd`, `waves/WaveController.gd` — deterministic pre-flattened spawn schedule
 - `economy/Economy.gd` — mission payout, upgrade/ability/relic cost formulas
 - `procgen/MapGenerator.gd` — seeded mission-grid generation with a reachability-repair pass
+- `run/RunState.gd`, `run/SaveManager.gd` (RZ-054/RZ-055) — roster (`Commander` + parallel class/level/unit_count metadata), gold, a placeholder `campaign_state` Dictionary shaped like the save schema, permadeath tracking (`on_commander_died`), `is_run_over()` (wipe only — campaign completion isn't modeled yet), and JSON save/load to `user://saves/<slot>.json`. **Not yet wired into `MissionController`** — see the note under "What's documented but NOT implemented" below.
 
 **Data runtime wrappers** (`game/data_runtime/`) — one per data file, all thin typed accessors.
 
-**Autoloads** (`game/autoload/`): `DataLoader` (loads + validates all data at boot, builds `AbilityRegistry`), `AudioManager` (event→bus table, no real audio assets yet), `GameState` (seed/difficulty/gold holder — will be superseded by `RunState` once RZ-054 lands).
+**Autoloads** (`game/autoload/`): `DataLoader` (loads + validates all data at boot, builds `AbilityRegistry`), `AudioManager` (event→bus table, no real audio assets yet), `GameState` (seed/difficulty/gold/mission-deployment holder — still not migrated to wrap a `RunState` instance now that one exists; see below).
 
 **Mission Prep scene** (`game/scenes/MissionPrep.tscn`, `game/scripts/ui/MissionPrepController.gd`, RZ-075):
 - Regenerates the same mission grid `Mission.tscn` will (same seed + derive key, MapGenerator's determinism contract — no data passed between scenes except the final deployment choice)
@@ -54,7 +55,7 @@ python tools/validate_data.py   # → OK
 - 8 audio events fire through `AudioManager.play_event()` (no real SFX yet, but the pipeline is proven end-to-end)
 
 **Tests** (`game/tests/`, run via `godot --headless --path game --script res://tests/run_tests.gd`):
-`test_pathfinding.gd`, `test_combat_rps.gd`, `test_economy.gd`, `test_procgen_determinism.gd`, plus `test_reporter.gd`/`run_tests.gd` infrastructure.
+`test_pathfinding.gd`, `test_combat_rps.gd`, `test_economy.gd`, `test_procgen_determinism.gd`, `test_save_load_roundtrip.gd`, plus `test_reporter.gd`/`run_tests.gd` infrastructure.
 
 **Tooling:** `tools/validate_data.py` (schema + cross-reference validation), `tools/balance_report.py` (TTK matrices, gold curves — run it, output is sane).
 
@@ -64,9 +65,9 @@ python tools/validate_data.py   # → OK
 
 - **Marksman, Barricade classes' abilities** — data entries exist (`data/units.json`, `data/unit_abilities.json`), but `focused_ranged_burst`/`line_impale_charge` have no `Ability` subclass yet (RZ-048). `AbilityRegistry` and `DataLoader`'s boot-time check will `assert()`-fail loudly if you try to activate them, by design (ARCHITECTURE.md §6 invariant) — this is expected until RZ-048 lands, not a bug.
 - **Traits/relics beyond data** — all 10 traits and 8 relics are fully specified in `data/traits.json`/`data/relics.json` and `CombatResolver`/`Economy` already read trait modifiers generically, but relics have no runtime effect implementation yet (no `RelicEffect` system exists — tracked as RZ-109).
-- **Campaign layer** — `CampaignGenerator`, `CampaignState`, the Campaign Map scene, fog of war, split-the-party: none exist yet (RZ-080/081/082/084). The vertical slice plays exactly one hardcoded district.
-- **Run/meta layer** — `RunState`, `SaveManager`: don't exist yet (RZ-054/055). `GameState` autoload is a deliberately temporary stand-in holding just seed/difficulty/gold.
-- **Main Menu, Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-074, RZ-085, RZ-086, RZ-089). `Main.gd` skips straight into Mission Prep. (Mission Prep itself now exists — RZ-075, see above.)
+- **Campaign layer** — `CampaignGenerator`, `CampaignState`, the Campaign Map scene, fog of war, split-the-party: none exist yet (RZ-080/081/082/084). The vertical slice plays exactly one hardcoded district. `RunState.campaign_state` is a placeholder Dictionary shaped like the save schema, ready for these to populate once they exist.
+- **`RunState` is not wired into the live mission flow.** It exists and is fully tested standalone (save/load round-trips correctly), but `MissionController._spawn_squads()` still creates fresh `Commander`/`Squad` instances every mission exactly as before RZ-054 landed — it does not read from or write back to a `RunState`. Concretely: permadeath in a mission still only fires `Squad.wiped`/`Squad.commander_lost` (mission-local signals), never `RunState.on_commander_died()`; gold from `Economy.mission_payout()` goes to `GameState.gold`, never `RunState.gold`; nothing calls `SaveManager.save()` anywhere yet. Wiring this up is real, scoped work — not a trivial follow-up — because it also needs a decision on when a `RunState` is created (Main Menu "New Run", RZ-074) and where saves are triggered from (after each mission? a manual save button?). Tracked as RZ-141 (the wiring itself) + RZ-088 (permadeath-specific polish on top of it).
+- **Main Menu, Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-074, RZ-085, RZ-086, RZ-089). `Main.gd` skips straight into Mission Prep with `GameState.start_new_run()`, not a `RunState`. (Mission Prep itself now exists — RZ-075, see above.)
 - **Danger indicator, minimap** — not implemented (RZ-068, RZ-127).
 - **Enemy types beyond the 3 wired into the default wave set** — Spitter, Brute Spitter, Thrower, Leaper, Colossus all have full `data/enemies.json` entries and `EnemyAI` behaviors already support their `behavior` values generically, but no wave_set currently spawns them except `transit_hub_5wave` (unused by the vertical slice's hardcoded `residential` district).
 - **Real art/audio** — 100% primitive placeholder (`ColorRect`s, palette-matched) per ADR-0008/`docs/ASSET_PIPELINE.md`. No audio streams at all yet, only the event pipeline.
@@ -93,8 +94,8 @@ godot --headless --path game --script res://tests/run_tests.gd
 
 ## Next 3 Tasks (recommended order)
 
-1. **RZ-054 + RZ-055 — RunState + SaveManager**, unlocking the whole M2 run-systems chain (permadeath persistence, save/load, and everything the Campaign Map / Armory screens need to hang off of).
-2. **RZ-074 — Main Menu scene**, so `Main.gd` stops skipping straight into Mission Prep with a random seed every launch.
+1. **RZ-141 — Wire `RunState` into `Main.gd`/`MissionController.gd`**, so the roster/gold/permadeath system that now exists (RZ-054/055) actually drives the playable mission instead of sitting unused next to it. This is the real unlock for RZ-088, RZ-086, RZ-090, and eventually the Campaign Map.
+2. **RZ-074 — Main Menu scene**, so `Main.gd` stops skipping straight into Mission Prep with a random seed every launch, and has somewhere to put "New Run" (create a `RunState`) vs. "Continue" (`SaveManager.load()`).
 3. Open the project in the actual Godot editor and playtest Mission Prep → Mission by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right — that still needs a human or a screenshot-driven agent pass). In particular: verify deployment-zone tiles are visually distinct enough and that clicking near a tile boundary doesn't feel finicky.
 
 ## Known Simplifications (intentional, not bugs)

@@ -6,6 +6,15 @@ extends RefCounted
 
 signal died(commander: Commander)
 
+## v1 placeholder baseline commander HP (docs/BALANCE.md doesn't cover
+## commanders yet — no per-class/per-hero variance exists). Used wherever a
+## fresh Commander needs default HP: MissionController spawning a new
+## mission's squads, and RunState.from_save_dict() reconstructing a
+## commander after a save/load (a run's save granularity is campaign-map
+## level, ADR-0007 — commander HP isn't persisted, they're full-HP whenever
+## a new mission starts).
+const DEFAULT_MAX_HP := 20
+
 var id: String
 var display_name: String
 var trait_id: String = ""
@@ -35,6 +44,16 @@ func die() -> void:
 	alive = false
 	hp = 0
 	died.emit(self)
+
+## Restores alive/hp state directly, without emitting `died` — used only by
+## RunState.from_save_dict() when reconstructing a commander from a save.
+## die() is the live-gameplay path and must keep emitting the signal so
+## RunState.on_commander_died() reacts to an in-mission permadeath; this is
+## the load-time path, where the caller (RunState) is doing that same
+## bookkeeping itself as it rebuilds the roster.
+func restore_state(p_alive: bool) -> void:
+	alive = p_alive
+	hp = 0 if not p_alive else max_hp
 
 func traits() -> Array:
 	return [trait_id] if trait_id != "" else []

@@ -177,14 +177,17 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Responsibility:** top-level run state (roster, gold, campaign state, seed), permadeath handling, save/load.
 
 **Public API:**
-- `RunState.new(seed: int, difficulty: String)`
+- `RunState.new_run(seed: int, difficulty: String, starting_gold: int) -> RunState` — starting_gold is supplied by the caller (`economy.json`, read at the scripts/ layer) since core/ must never reference DataLoader (ADR-0002).
 - `RunState.commanders: Array[Commander]`
-- `RunState.on_commander_died(commander)` — removes squad, triggers wipe check
-- `RunState.is_run_over() -> bool`
+- `RunState.add_commander(commander, unit_class: String, level: int, unit_count: int) -> void` — adds to the roster and wires `commander.died` to `on_commander_died`.
+- `RunState.get_roster_meta(commander_id: String) -> Dictionary` — class/level/unit_count, since `Commander` itself doesn't carry squad metadata (that's `Squad`'s job, and squads are mission-scoped, not persistent).
+- `RunState.on_commander_died(commander)` — removes the commander's roster metadata (permadeath, GDD pillar 2); the commander stays in `commanders`, marked not alive, for fallen-commander history (UX_UI.md §7).
+- `RunState.is_run_over() -> bool` — true on total wipe (campaign completion not modeled yet, pending RZ-081).
+- `RunState.to_save_dict() -> Dictionary` / `RunState.from_save_dict(data: Dictionary) -> RunState` — schemas/save_file.schema.json shape.
 - `SaveManager.save(run_state, slot: int) -> void`
-- `SaveManager.load(slot: int) -> RunState`
+- `SaveManager.load(slot: int) -> RunState` — null if the slot doesn't exist.
 
-**Depends on:** `core/campaign/`, `core/squad/`, `core/economy/`, JSON serialization (engine `FileAccess`, isolated behind `SaveManager`).
+**Depends on:** `core/campaign/` (not yet implemented — `campaign_state` is currently a placeholder Dictionary matching the save schema's shape until RZ-080/RZ-081 land), `core/squad/` (`Commander`, for identity/permadeath), JSON serialization (engine `FileAccess`/`DirAccess`, isolated behind `SaveManager`).
 
 **Invariants:** save format versioned (`docs/DATA_SCHEMA.md` §"Save File"); `SaveManager` is the only class allowed to touch `user://`.
 

@@ -3,7 +3,7 @@
 ## Exits with code 0 if every test passed, 1 otherwise — CI treats a
 ## non-zero exit as a failed build (.github/workflows/ci.yml).
 ##
-## Uses explicit preload() for the four test files rather than bare global
+## Uses explicit preload() for the test files rather than bare global
 ## class_name references, so at least loading this file never fails with
 ## "Identifier not declared" on a checkout whose global script class cache
 ## hasn't been built yet (.godot/global_script_class_cache.cfg, only
@@ -19,6 +19,7 @@ const TestPathfindingScript := preload("res://tests/test_pathfinding.gd")
 const TestCombatRPSScript := preload("res://tests/test_combat_rps.gd")
 const TestEconomyScript := preload("res://tests/test_economy.gd")
 const TestProcgenDeterminismScript := preload("res://tests/test_procgen_determinism.gd")
+const TestSaveLoadRoundtripScript := preload("res://tests/test_save_load_roundtrip.gd")
 
 func _initialize() -> void:
 	var reporter = TestReporterScript.new()
@@ -27,6 +28,7 @@ func _initialize() -> void:
 	TestCombatRPSScript.run(reporter)
 	TestEconomyScript.run(reporter)
 	TestProcgenDeterminismScript.run(reporter)
+	TestSaveLoadRoundtripScript.run(reporter)
 
 	reporter.print_summary()
 	quit(0 if reporter.all_passed() else 1)

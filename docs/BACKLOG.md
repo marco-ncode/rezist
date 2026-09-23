@@ -67,8 +67,8 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-051 | Implement core/economy/Economy.gd | Must | M | RZ-027,044 | engine | Done |
 | RZ-052 | Implement core/procgen/MapGenerator.gd (mission grid gen, seeded) | Must | L | RZ-041,029 | engine | Done |
 | RZ-053 | Implement reachability validation in MapGenerator (entry→safehouse path guarantee) | Must | S | RZ-052 | engine | Done |
-| RZ-054 | Implement core/run/RunState.gd (roster, gold, permadeath hook) | Must | M | RZ-046,051 | engine | Backlog |
-| RZ-055 | Implement core/run/SaveManager.gd (JSON save/load) | Must | M | RZ-054 | engine | Backlog |
+| RZ-054 | Implement core/run/RunState.gd (roster, gold, permadeath hook) | Must | M | RZ-046,051 | engine | Done |
+| RZ-055 | Implement core/run/SaveManager.gd (JSON save/load) | Must | M | RZ-054 | engine | Done |
 
 ## Section C — M1 Vertical Slice: Presentation & Playability
 
@@ -103,11 +103,12 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-085 | Armory/Upgrade screen (spend gold on class levels/abilities/relics) | Must | L | RZ-051,067 | ui | Backlog |
 | RZ-086 | Roster/Commander screen (traits, equipped relic, alive/dead history) | Should | M | RZ-054 | ui | Backlog |
 | RZ-087 | Hero rescue mission variant (trapped survivor tile + recruit-on-win) | Should | M | RZ-052,054 | engine | Backlog |
-| RZ-088 | Permadeath flow: commander death → squad removal → UI feedback | Must | M | RZ-054,046 | engine | Backlog |
+| RZ-088 | Permadeath flow: commander death → squad removal → UI feedback | Must | M | RZ-141,046 | engine | Backlog |
 | RZ-089 | Run-over detection (total wipe / campaign complete) + summary screen | Must | M | RZ-054,081 | ui | Backlog |
 | RZ-090 | Save/Load wired to Main Menu "Continue" | Must | M | RZ-055,074 | engine | Backlog |
 | RZ-091 | Difficulty selection (Easy/Normal/Hard/Very Hard) at run start | Should | S | RZ-028,080 | ui | Backlog |
 | RZ-092 | Checkpoint nodes on campaign graph | Could | S | RZ-081 | engine | Backlog |
+| RZ-141 | Wire `RunState` into `Main.gd`/`MissionController.gd` (roster persistence, permadeath → `RunState`, gold → `RunState`) | Must | M | RZ-054 ✅ | engine | Backlog |
 
 ## Section E — M3 Content Expansion
 
@@ -149,7 +150,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-132 | test_combat_rps.gd | Must | S | RZ-045,130 | tooling | Done |
 | RZ-133 | test_economy.gd | Must | S | RZ-051,130 | tooling | Done |
 | RZ-134 | test_procgen_determinism.gd | Must | M | RZ-052,130 | tooling | Done |
-| RZ-135 | test_save_load_roundtrip.gd | Must | M | RZ-055,130 | tooling | Backlog |
+| RZ-135 | test_save_load_roundtrip.gd | Must | M | RZ-055,130 | tooling | Done |
 | RZ-136 | .github/workflows/ci.yml: data validation + unit tests | Must | M | RZ-032,130 | tooling | Done |
 | RZ-137 | CI: headless export smoke-build | Should | M | RZ-136 | tooling | Backlog |
 | RZ-138 | Export presets (Windows/Linux/macOS) | Should | S | RZ-137 | tooling | Backlog |
