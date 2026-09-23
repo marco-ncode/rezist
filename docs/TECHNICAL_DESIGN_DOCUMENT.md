@@ -17,7 +17,7 @@ Summary of why (over TypeScript+Three.js alternative):
 
 **Rendering approach:** 2.5D — orthographic camera over a 2D tile grid with a per-tile elevation offset applied to Y-position/sprite-layering (see `docs/ART_BIBLE.md` §2). This is simpler and faster to iterate than full 3D low-poly meshes while preserving the "diorama" read. Full 3D is not ruled out post-slice; revisit in an ADR if art direction demands it.
 
-**Engine version pin:** Godot `4.3.x` stable. Recorded in `game/project.godot` (`config/features`) and `.github/workflows/ci.yml`.
+**Engine version pin:** Godot `4.3.x` stable. Recorded in `game/project.godot` (`config/features`).
 
 ---
 
@@ -40,8 +40,9 @@ rezist/
 │   ├── tests/               # GDScript unit tests, run headlessly (ADR-0010 — lives
 │   │                       #   inside the project so `godot --script res://...` resolves)
 │   └── assets/              # art/audio (placeholders in v1, see ASSET_PIPELINE.md)
-└── .github/workflows/      # CI
 ```
+
+No `.github/workflows/` currently — CI was removed by explicit request (see `docs/CHANGELOG.md`); §9 below keeps the local commands to run the same checks manually.
 
 **Hard rule:** anything in `game/core/` must not reference `SceneTree`, `Node`, or do any rendering/audio calls. It takes plain data in, returns plain data out. This is what makes the simulation unit-testable without booting a scene (see §5). `game/scripts/` is the thin adapter layer that wires `core/` logic to Nodes, input, and rendering.
 
@@ -73,7 +74,7 @@ data/*.json  --(loaded + schema-checked at boot)-->  DataLoader (autoload)
                                     dictionaries, never literal numbers
 ```
 
-Full schema-by-schema documentation: `docs/DATA_SCHEMA.md`. Validation tool: `tools/validate_data.py` (also run in CI, see §9).
+Full schema-by-schema documentation: `docs/DATA_SCHEMA.md`. Validation tool: `tools/validate_data.py` (run manually — see §9 for why there's no CI right now).
 
 ---
 
@@ -120,10 +121,13 @@ Mission-grid generation (`MapGenerator.gd`) then independently generates the act
 
 ## 9. Tooling & CI
 
-- `tools/validate_data.py` — validates every `data/*.json` against its `schemas/*.schema.json` using `jsonschema` (Python). Run locally via `python tools/validate_data.py` and in CI on every push.
+**No CI pipeline is currently configured for this repository** — removed by explicit request (`docs/CHANGELOG.md`, `docs/HANDOFF.md`). Run the checks below manually before pushing until/unless CI is reintroduced.
+
+- `tools/validate_data.py` — validates every `data/*.json` against its `schemas/*.schema.json` using `jsonschema` (Python). Run via `python tools/validate_data.py`.
 - `tools/balance_report.py` — reads `data/*.json` and prints derived tables (effective DPS, TTK matrices, gold-per-minute curves) to help balance tuning without opening the engine. Not authoritative, just a diagnostic aid — see `docs/BALANCE.md`.
-- `game/tests/` — GDScript unit tests executed headlessly: `godot --headless --path game --script res://tests/run_tests.gd` (run from the repo root). See `docs/CONTRIBUTING.md` for the exact command and `docs/CODE_STYLE.md` for test conventions, and ADR-0010 for why tests live inside `game/` rather than at the repo root. **On a checkout with no `.godot/` cache yet, run `godot --headless --path game --import` once first** — a bare `--script` invocation doesn't build the global `class_name` lookup table, so every cross-file class reference fails to resolve until that warm-up runs (CI does this automatically).
-- CI pipeline (`.github/workflows/ci.yml`): data validation → import warm-up + GDScript unit tests → headless export smoke-build (export smoke-build not yet wired, see RZ-137). Full breakdown in that file's comments.
+- `game/tests/` — GDScript unit tests executed headlessly: `godot --headless --path game --script res://tests/run_tests.gd` (run from the repo root). See `docs/CONTRIBUTING.md` for the exact command and `docs/CODE_STYLE.md` for test conventions, and ADR-0010 for why tests live inside `game/` rather than at the repo root. **On a checkout with no `.godot/` cache yet, run `godot --headless --path game --import` once first** — a bare `--script` invocation doesn't build the global `class_name` lookup table, so every cross-file class reference fails to resolve until that warm-up runs.
+
+If CI is reintroduced later, `docs/HANDOFF.md` "CI / Build Status" records two real issues already found and fixed once (a Godot download version-string bug, and the `--import` warm-up requirement above) — reuse that fix rather than rediscovering it.
 
 ---
 

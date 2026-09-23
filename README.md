@@ -33,8 +33,9 @@ rezist/
 │   ├── scripts/       # thin Node adapters wiring core/ to scenes/input
 │   ├── scenes/        # .tscn scene trees
 │   └── tests/         # GDScript unit tests, run headlessly (see below)
-└── .github/workflows/ # CI
 ```
+
+No CI pipeline is currently configured for this repository (removed by explicit request — see `docs/CHANGELOG.md` and `docs/HANDOFF.md`). Run `tools/validate_data.py` and the test suite below manually before pushing.
 
 ## Requirements
 
