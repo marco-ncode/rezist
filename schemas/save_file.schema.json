@@ -3,7 +3,7 @@
   "$id": "rezist:save_file.schema.json",
   "title": "Run Save File",
   "type": "object",
-  "required": ["save_version", "seed", "difficulty", "gold", "campaign_state", "commanders", "total_safehouses_saved"],
+  "required": ["save_version", "seed", "difficulty", "gold", "campaign_state", "commanders", "total_safehouses_saved", "ability_unlocks"],
   "additionalProperties": false,
   "properties": {
     "save_version": { "type": "integer", "minimum": 1 },
@@ -11,6 +11,10 @@
     "difficulty": { "type": "string", "minLength": 1 },
     "gold": { "type": "integer", "minimum": 0 },
     "total_safehouses_saved": { "type": "integer", "minimum": 0 },
+    "ability_unlocks": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
     "campaign_state": {
       "type": "object",
       "required": ["visited_nodes", "lost_nodes", "progress_line_layer", "current_node"],

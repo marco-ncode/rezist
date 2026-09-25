@@ -18,7 +18,9 @@ extends RefCounted
 ## reinterpret an old save under a new shape (TDD §8).
 ## v2 (RZ-089) added total_safehouses_saved; from_save_dict() defaults it to
 ## 0 for a v1 save, which has no such key.
-const SAVE_VERSION := 2
+## v3 (RZ-144) added ability_unlocks; from_save_dict() defaults it to an
+## empty Dictionary for a v1/v2 save, which has no such key.
+const SAVE_VERSION := 3
 
 signal commander_died(commander: Commander)
 
@@ -33,6 +35,16 @@ var campaign_state: Dictionary
 ## end — nothing else needs a per-mission breakdown.
 var total_safehouses_saved: int = 0
 var _roster_meta: Dictionary = {} # commander.id -> {"unit_class", "level", "unit_count"}
+## RZ-144: commander.id -> true once that commander's class ability has been
+## purchased (Economy.ability_cost(), spent in the Armory's Abilities tab).
+## A separate table rather than a new roster_meta key so update_roster_meta()
+## — called after every mission and on every level-up purchase — can't
+## accidentally wipe a prior unlock by replacing the whole roster_meta entry.
+## Absence means "not purchased"; nothing ever erases an entry once true
+## (buying it is permanent for that commander, same spirit as a relic
+## equip), including on death — matches trait_id/relic_id, which also
+## aren't cleared when a commander falls (Roster screen history, RZ-086).
+var _ability_unlocks: Dictionary = {} # commander.id -> bool
 
 func _init(p_seed: int, p_difficulty_id: String) -> void:
 	seed_value = p_seed
@@ -103,6 +115,12 @@ func add_gold(amount: int) -> void:
 func add_safehouses_saved(count: int) -> void:
 	total_safehouses_saved += count
 
+func has_ability_unlocked(commander_id: String) -> bool:
+	return _ability_unlocks.get(commander_id, false)
+
+func unlock_ability(commander_id: String) -> void:
+	_ability_unlocks[commander_id] = true
+
 ## Serializes to a Dictionary matching schemas/save_file.schema.json.
 func to_save_dict() -> Dictionary:
 	var commander_dicts: Array = []
@@ -126,6 +144,7 @@ func to_save_dict() -> Dictionary:
 		"campaign_state": campaign_state.duplicate(true),
 		"commanders": commander_dicts,
 		"total_safehouses_saved": total_safehouses_saved,
+		"ability_unlocks": _ability_unlocks.duplicate(),
 	}
 
 ## Reconstructs a RunState from a save Dictionary. Dead commanders are
@@ -138,6 +157,9 @@ static func from_save_dict(data: Dictionary) -> RunState:
 	# v1 saves (save_version 1) predate total_safehouses_saved (v2, RZ-089) —
 	# default to 0 rather than failing to load an older save.
 	run_state.total_safehouses_saved = data.get("total_safehouses_saved", 0)
+	# v1/v2 saves predate ability_unlocks (v3, RZ-144) — default to an empty
+	# Dictionary (nothing purchased) rather than failing to load an older save.
+	run_state._ability_unlocks = (data.get("ability_unlocks", {}) as Dictionary).duplicate()
 
 	var campaign: Dictionary = data.get("campaign_state", {})
 	run_state.campaign_state = {

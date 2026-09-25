@@ -6,16 +6,18 @@
 ## same convention as MainMenu/MissionPrepController/RunSummary (no
 ## hand-authored .tscn UI tree).
 ##
-## Class Tiers and Relics are real, functional purchases: leveling up
+## All three tabs are real, functional purchases. Class Tiers: leveling up
 ## changes the stats `UnitData.get_level_stats()` hands the squad next
-## mission, and equipping a relic sets the same `Commander.relic_id` field
-## SaveManager already round-trips. Abilities is informational only in v1 —
-## every class's ability already works unconditionally regardless of squad
-## level (no gating exists in MissionController/AbilityRegistry today), so
-## there is nothing a gold purchase would actually unlock yet. Wiring real
-## enforcement (GDD's "L2: ability purchasable") is tracked separately as
-## RZ-144, since it touches already-working ability-activation code and
-## deserves its own careful pass rather than riding in here.
+## mission. Relics: equipping one sets the same `Commander.relic_id` field
+## SaveManager already round-trips (the relic's actual combat *effect* is
+## still the separate RZ-109 gap). Abilities (RZ-144): buyable only once the
+## squad is level 2+ (GDD: "L2: class specialization unlocked, ability
+## purchasable"), spends `Economy.ability_cost()`, and sets a persisted
+## per-commander flag (`RunState.unlock_ability()`) that
+## `MissionController._squad_ability_unlocked()` actually checks before
+## letting the ability be used in a mission — before RZ-144, every class's
+## ability worked unconditionally from mission 1 regardless of level or
+## purchase, and this tab only ever displayed the cost.
 class_name ArmoryController
 extends Control
 
@@ -184,9 +186,16 @@ func _on_upgrade_pressed(commander: Commander, unit_class: String, level: int, u
 	_refresh_gold_label()
 	_refresh_content()
 
+## RZ-144: a real purchase — spending here actually gates ability use in
+## MissionController (MissionController._squad_ability_unlocked()), unlike
+## the earlier v1 behavior where this tab only ever displayed the cost.
+## Matches GDD's "L2: class specialization unlocked, ability purchasable" —
+## the squad must reach level 2 (Class Tiers tab) before this is buyable at
+## all, mirroring how a level-1 squad has no ability access today either.
 func _build_abilities_panel(commander: Commander) -> void:
 	var meta := GameState.run_state.get_roster_meta(commander.id)
 	var unit_class: String = meta.get("unit_class", "riot")
+	var level: int = meta.get("level", 1)
 	var class_data := DataLoader.units.get_unit_class(unit_class)
 	# class_data["ability_id"] is JSON null for a class with no ability
 	# (e.g. Recruit) — the key exists, so .get(key, "") does not fall back
@@ -207,15 +216,54 @@ func _build_abilities_panel(commander: Commander) -> void:
 		return
 
 	var ability_available: bool = DataLoader.abilities.has_ability(ability_id)
-	var cost: int = _economy.ability_cost(commander.trait_id)
-	var detail := Label.new()
+	var ability_name := ability_id.capitalize()
 	if ability_available:
-		var ability := DataLoader.abilities.get_ability(ability_id)
-		detail.text = "%s — %d gold\nAlready available to this squad in v1: ability access isn't gated by level or purchase yet." % [ability.get("name", ability_id), cost]
-	else:
-		detail.text = "%s — %d gold\nNot yet implemented (no Ability subclass exists for this effect)." % [ability_id.capitalize(), cost]
+		ability_name = DataLoader.abilities.get_ability(ability_id).get("name", ability_id)
+
+	var cost: int = _economy.ability_cost(commander.trait_id)
+	var unlocked: bool = GameState.run_state.has_ability_unlocked(commander.id)
+
+	var detail := Label.new()
+	detail.text = "%s — %d gold" % [ability_name, cost]
 	detail.add_theme_color_override("font_color", Color.WHITE)
 	_content_root.add_child(detail)
+
+	if not ability_available:
+		var not_ready_label := Label.new()
+		not_ready_label.text = "Not yet implemented (no Ability subclass exists for this effect) — nothing to unlock yet."
+		not_ready_label.add_theme_color_override("font_color", Color.WHITE)
+		_content_root.add_child(not_ready_label)
+		return
+
+	if level < 2:
+		var locked_label := Label.new()
+		locked_label.text = "Reach level %d (Class Tiers tab) to unlock this ability." % 2
+		locked_label.add_theme_color_override("font_color", Color.WHITE)
+		_content_root.add_child(locked_label)
+		return
+
+	if unlocked:
+		var unlocked_label := Label.new()
+		unlocked_label.text = "Unlocked — available in mission."
+		unlocked_label.add_theme_color_override("font_color", Color.WHITE)
+		_content_root.add_child(unlocked_label)
+		return
+
+	var button := Button.new()
+	button.text = "Unlock — %d gold" % cost
+	button.custom_minimum_size = Vector2(220, 40)
+	button.disabled = GameState.run_state.gold < cost
+	button.pressed.connect(_on_ability_unlock_pressed.bind(commander))
+	_content_root.add_child(button)
+
+func _on_ability_unlock_pressed(commander: Commander) -> void:
+	var cost: int = _economy.ability_cost(commander.trait_id)
+	if not GameState.run_state.spend_gold(cost):
+		return
+	GameState.run_state.unlock_ability(commander.id)
+	AudioManager.play_event("upgrade_purchased")
+	_refresh_gold_label()
+	_refresh_content()
 
 func _build_relics_panel(commander: Commander) -> void:
 	var equipped_name := "None"

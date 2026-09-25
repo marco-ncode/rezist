@@ -166,7 +166,7 @@ Generation *parameters* (not a saved graph — the graph itself is generated at 
 
 ```json
 {
-  "save_version": 2,
+  "save_version": 3,
   "seed": 123456789,
   "difficulty": "normal",
   "gold": 47,
@@ -180,11 +180,12 @@ Generation *parameters* (not a saved graph — the graph itself is generated at 
     {"id": "cmdr_001", "name": "J. Alvarez", "unit_class": "riot", "level": 2,
      "trait_id": "ironskin", "relic_id": "mines", "alive": true, "unit_count": 5}
   ],
-  "total_safehouses_saved": 12
+  "total_safehouses_saved": 12,
+  "ability_unlocks": { "cmdr_001": true }
 }
 ```
 
-`save_version` gates migration logic in `SaveManager.gd` — bump it and add a migration step whenever the shape changes; never silently reinterpret an old save under a new shape. `total_safehouses_saved` (added in v2, RZ-089) is the run's cumulative safehouse count across every mission played, shown on the Run Summary screen (UX_UI.md §8); `RunState.from_save_dict()` defaults it to `0` when loading a v1 save that predates it.
+`save_version` gates migration logic in `SaveManager.gd` — bump it and add a migration step whenever the shape changes; never silently reinterpret an old save under a new shape. `total_safehouses_saved` (added in v2, RZ-089) is the run's cumulative safehouse count across every mission played, shown on the Run Summary screen (UX_UI.md §8); `RunState.from_save_dict()` defaults it to `0` when loading a v1 save that predates it. `ability_unlocks` (added in v3, RZ-144) maps a commander id to `true` once that commander's class ability has been purchased in the Armory (`Economy.ability_cost()`); a commander absent from the map has not purchased it. `RunState.from_save_dict()` defaults this to `{}` when loading a v1/v2 save that predates it.
 
 ---
 

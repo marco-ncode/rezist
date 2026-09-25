@@ -285,9 +285,15 @@ func _on_tile_clicked(tile: Vector2i) -> void:
 		return
 
 	if _ability_target_mode:
-		var ability := DataLoader.ability_registry.get_ability(_squad_ability_id(squad))
-		ability.activate(squad, tile, {"grid": _grid, "enemies": _active_enemies, "rng": _tick_rng, "trait_data": DataLoader.traits})
-		AudioManager.play_event("ability_activated_breach")
+		# RZ-144: defensive re-check — the ability button is already disabled
+		# unless _squad_ability_unlocked(squad) is true, so this should never
+		# actually be false here, but tile-clicks and button state are two
+		# separate code paths and this is cheap insurance against them ever
+		# drifting apart.
+		if _squad_ability_unlocked(squad):
+			var ability := DataLoader.ability_registry.get_ability(_squad_ability_id(squad))
+			ability.activate(squad, tile, {"grid": _grid, "enemies": _active_enemies, "rng": _tick_rng, "trait_data": DataLoader.traits})
+			AudioManager.play_event("ability_activated_breach")
 		_ability_target_mode = false
 	else:
 		squad.order_move_to(tile, _grid)
@@ -307,6 +313,9 @@ func _on_squad_button_pressed(index: int) -> void:
 
 func _on_ability_button_pressed() -> void:
 	if _selected_squad_index < 0:
+		return
+	var squad: Squad = _squads[_selected_squad_index]
+	if squad.is_wiped() or not _squad_ability_unlocked(squad):
 		return
 	_ability_target_mode = true
 
@@ -333,15 +342,40 @@ func _squad_ability_id(squad: Squad) -> String:
 	var ability_id: String = class_data.get("ability_id", "") if class_data.get("ability_id") != null else ""
 	return ability_id
 
+## RZ-144: an ability is usable only once its class actually has one, the
+## squad has reached level 2 (GDD: "L2: class specialization unlocked,
+## ability purchasable"), and it's been bought in the Armory
+## (Economy.ability_cost(), RunState.unlock_ability()). Before this, every
+## class's ability worked unconditionally from mission 1 regardless of
+## level or purchase — RZ-085's Armory Abilities tab only ever displayed
+## the cost, never actually gated anything on it.
+func _squad_ability_unlocked(squad: Squad) -> bool:
+	if _squad_ability_id(squad) == "":
+		return false
+	if squad.level < 2:
+		return false
+	return GameState.run_state.has_ability_unlocked(squad.commander.id)
+
 func _refresh_hud() -> void:
 	for i in _squads.size():
 		var squad: Squad = _squads[i]
 		_hud.update_squad_button(i, squad.unit_count(), i == _selected_squad_index, squad.is_wiped(), squad.commander.display_name)
 	var wave_text := "Wave %d/%d" % [_wave_controller.current_wave_number(), _wave_controller.total_waves]
 	_hud.update_wave_label(wave_text)
-	var ability_ready: bool = _selected_squad_index >= 0 and not _squads[_selected_squad_index].is_wiped() \
-		and _squads[_selected_squad_index].ability_cooldown_remaining <= 0.0
-	_hud.update_ability_button(ability_ready, "Breach" if _ability_target_mode else "Ability")
+
+	# "Ability" is the neutral default with nothing selected — "(Locked)"
+	# only means something once a specific squad's ability status is known.
+	var ability_ready := false
+	var ability_label := "Ability"
+	if _selected_squad_index >= 0 and not _squads[_selected_squad_index].is_wiped():
+		var selected_squad: Squad = _squads[_selected_squad_index]
+		var ability_unlocked := _squad_ability_unlocked(selected_squad)
+		ability_ready = ability_unlocked and selected_squad.ability_cooldown_remaining <= 0.0
+		if not ability_unlocked:
+			ability_label = "Ability (Locked)"
+	if _ability_target_mode:
+		ability_label = "Breach"
+	_hud.update_ability_button(ability_ready, ability_label)
 
 ## RZ-088: the permadeath "moment" — commander death is the one loss the
 ## player should never miss. A toast backs up the existing audio sting since
