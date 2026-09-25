@@ -44,6 +44,11 @@ var _enemy_views: Dictionary = {} # enemy.id -> ColorRect
 var _hud: CanvasLayer
 
 func _ready() -> void:
+	if GameState.run_state == null:
+		# Mission.tscn loaded directly (e.g. quick manual testing in the
+		# editor) without going through Main.gd/MissionPrep first.
+		GameState.start_new_run(-1, "normal")
+
 	_economy = DataLoader.make_economy()
 	_mission_rng = GameState.make_rng("mission")
 	_district_id = GameState.mission_district_id
@@ -85,11 +90,20 @@ func _ready() -> void:
 	_hud.ability_button_pressed.connect(_on_ability_button_pressed)
 	_refresh_hud()
 
+## RZ-141: squads' commanders now persist across missions in RunState, so
+## each Squad must unhook itself from its (still-alive) commander when this
+## scene goes away — otherwise the commander's `died` signal keeps a live
+## reference to every past mission's Squad instance forever (see
+## Squad.disconnect_commander_signal()). _exit_tree fires however this
+## scene is torn down (win, lose, or a future forced scene change).
+func _exit_tree() -> void:
+	for squad in _squads:
+		squad.disconnect_commander_signal()
+
 func _spawn_squads() -> void:
 	if _safehouses.is_empty():
 		return
 	var center: Vector2i = _safehouses[0].position
-	var commander_names := ["J. Alvarez", "D. Okafor", "M. Torres"]
 	var used_positions: Dictionary = {}
 
 	# RZ-075: prefer the player's chosen deployment tiles from MissionPrep.
@@ -99,14 +113,24 @@ func _spawn_squads() -> void:
 	var deployment := GameState.mission_deployment_positions
 	GameState.clear_mission_deployment()
 
-	for i in 3:
+	# RZ-141: squads are sourced from RunState's roster — the same Commander
+	# objects RunState already tracks (and already has `died` connected to
+	# RunState.on_commander_died) — instead of fresh throwaway instances, so
+	# permadeath and per-squad unit losses persist across missions rather
+	# than silently resetting every time a mission scene loads.
+	var roster: Array = GameState.run_state.alive_commanders()
+	for i in roster.size():
+		var commander: Commander = roster[i]
+		var meta := GameState.run_state.get_roster_meta(commander.id)
+		var unit_class: String = meta.get("unit_class", "riot")
+		var level: int = meta.get("level", 1)
+		var unit_count: int = meta.get("unit_count", 0)
+
 		var squad_center: Vector2i = deployment[i] if i < deployment.size() and deployment[i] != null \
 			else center + Vector2i(i - 1, 2)
-		var spawn_positions := _pick_spawn_positions(squad_center, 4, used_positions)
-		if spawn_positions.is_empty():
-			continue
-		var commander := Commander.new("cmdr_%d" % i, commander_names[i % commander_names.size()], Commander.DEFAULT_MAX_HP)
-		var squad := Squad.new("sq_%d" % i, commander, "riot", 1, DataLoader.units, spawn_positions)
+		var spawn_positions := _pick_spawn_positions(squad_center, unit_count, used_positions)
+
+		var squad := Squad.new("sq_%d" % i, commander, unit_class, level, DataLoader.units, spawn_positions)
 		squad.wiped.connect(_on_squad_wiped.bind(i))
 		squad.commander_lost.connect(_on_commander_exposed)
 		_squads.append(squad)
@@ -280,7 +304,7 @@ func _squad_ability_id(squad: Squad) -> String:
 func _refresh_hud() -> void:
 	for i in _squads.size():
 		var squad: Squad = _squads[i]
-		_hud.update_squad_button(i, squad.unit_count(), i == _selected_squad_index, squad.is_wiped())
+		_hud.update_squad_button(i, squad.unit_count(), i == _selected_squad_index, squad.is_wiped(), squad.commander.display_name)
 	var wave_text := "Wave %d/%d" % [_wave_controller.current_wave_number(), _wave_controller.total_waves]
 	_hud.update_wave_label(wave_text)
 	var ability_ready := _selected_squad_index >= 0 and not _squads[_selected_squad_index].is_wiped() \
@@ -318,7 +342,14 @@ func _end_mission(won: bool) -> void:
 	var gold_earned := 0
 	if won:
 		gold_earned = _economy.mission_payout(safehouses_saved, surviving_squads, difficulty_tier)
-		GameState.gold += gold_earned
+		GameState.run_state.add_gold(gold_earned)
+
+	# RZ-141: write each surviving squad's post-mission headcount back to the
+	# roster so losses persist into the next mission rather than resetting.
+	# Wiped squads need no action here — RunState.on_commander_died() already
+	# removed their roster metadata via the signal connected in add_commander().
+	for squad in surviving_squads:
+		GameState.run_state.update_roster_meta(squad.commander.id, squad.unit_class, squad.level, squad.unit_count())
 
 	AudioManager.play_event("mission_won" if won else "mission_lost")
 	_hud.show_resolution(won, safehouses_saved, _safehouses.size(), gold_earned)

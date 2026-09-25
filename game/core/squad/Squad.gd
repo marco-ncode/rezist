@@ -153,3 +153,13 @@ func _prune_dead_units() -> void:
 
 func _on_commander_died(_commander: Commander) -> void:
 	wiped.emit(self)
+
+## Must be called when this Squad is discarded (mission end/scene teardown)
+## if `commander` outlives it — which it now always does once a mission's
+## squads are sourced from RunState.commanders (RZ-141): Commander persists
+## in the roster across missions, so an un-disconnected `commander.died`
+## connection would hold a live reference to this Squad forever (RefCounted
+## has no cycle collector), leaking one stale Squad per mission played.
+func disconnect_commander_signal() -> void:
+	if commander.died.is_connected(_on_commander_died):
+		commander.died.disconnect(_on_commander_died)

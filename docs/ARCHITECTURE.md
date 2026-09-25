@@ -85,11 +85,12 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 - `Squad.tick(delta, grid, combat_context) -> void` — autonomous per-unit behavior (advance, engage nearest valid target in range, retreat if isolated).
 - `Squad.unit_count() -> int` (this **is** the squad's visible "health" per GDD pillar 3)
 - `Squad.is_wiped() -> bool`
-- `Commander.die() -> void` → triggers squad permadeath (emits `commander_died` signal consumed by `core/run/RunState.gd`)
+- `Squad.disconnect_commander_signal() -> void` — **must** be called (e.g. from the owning scene's `_exit_tree()`) when a Squad is discarded, if `commander` outlives it. Since RZ-141, `Commander` objects persist across missions in `RunState.commanders`; `Squad._init()` connects `commander.died` to a bound method on itself, and that connection holds a live reference to the Squad. Skipping this leaks one stale Squad (and its Units) per mission — `RefCounted` has no cycle collector.
+- `Commander.die() -> void` → triggers permadeath (emits `died`, consumed by both `Squad._on_commander_died` — mission-local `wiped` signal — and `core/run/RunState.on_commander_died` when the commander came from a `RunState` roster).
 
 **Depends on:** `core/grid/`, `core/pathfinding/`, `core/combat/CombatResolver.gd`, `data_runtime/UnitData.gd`, `data_runtime/TraitData.gd`.
 
-**Invariants:** a `Squad` with `unit_count() == 0` has no commander check left to make — commander death is the sole permadeath trigger (a squad can lose all rank-and-file units and still exist as just the commander per Bad North's own rule: **the commander is the last unit standing and fights personally**). Squad max size is `base_max_size + trait/relic modifiers` (`Popular` trait, `Tactical Radio` relic), computed, never stored as a separate mutable field to avoid desync.
+**Invariants:** a `Squad` with `unit_count() == 0` has no commander check left to make — commander death is the sole permadeath trigger (a squad can lose all rank-and-file units and still exist as just the commander per Bad North's own rule: **the commander is the last unit standing and fights personally** — not yet enforced in combat, RZ-142). Squad max size is `base_max_size + trait/relic modifiers` (`Popular` trait, `Tactical Radio` relic), computed, never stored as a separate mutable field to avoid desync.
 
 ---
 

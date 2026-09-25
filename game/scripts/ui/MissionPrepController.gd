@@ -2,18 +2,18 @@
 ## before wave 1 and lets the player place each squad on a deployment-zone
 ## tile. [Start] only enables once every squad has a chosen tile.
 ##
-## Regenerates the mission grid independently from GameState.seed_value
-## rather than receiving it from anywhere — MapGenerator's determinism
-## contract (TDD §5) guarantees Mission.tscn's own regeneration from the
-## same seed/derive-key produces the byte-identical grid, so only the
-## small deployment decision (one tile per squad) needs to cross the scene
-## transition via GameState.mission_deployment_positions.
+## Regenerates the mission grid independently from
+## GameState.run_state.seed_value rather than receiving it from anywhere —
+## MapGenerator's determinism contract (TDD §5) guarantees Mission.tscn's
+## own regeneration from the same seed/derive-key produces the
+## byte-identical grid, so only the small deployment decision (one tile per
+## squad) needs to cross the scene transition via
+## GameState.mission_deployment_positions.
 extends Node2D
 
 const GridRendererScript := preload("res://scripts/mission/GridRenderer.gd")
 const TILE_SIZE := GridRendererScript.TILE_SIZE
 const DEPLOYMENT_RADIUS := 3
-const SQUAD_COUNT := 3
 const ZONE_COLOR := Color(0.95, 0.66, 0.23, 0.22)
 const MARKER_COLOR := Color("F2A93B")
 
@@ -21,17 +21,30 @@ var _grid: TacticalGrid
 var _safehouses: Array = []
 var _entry_points: Array = []
 var _deployment_tiles: Array = [] # Array[Vector2i]
-var _chosen_positions: Array = [] # size SQUAD_COUNT, Vector2i or null
+## RZ-141: sized to the run's live roster (GameState.run_state.alive_commanders()),
+## not a hardcoded 3 — a run that has already lost a commander to permadeath
+## deploys fewer squads, and Mission.tscn (MissionController._spawn_squads())
+## reads this same roster in the same order, so the two screens agree.
+var _squad_count := 0
+var _roster: Array = [] # Array[Commander], same order MissionController reads
+var _chosen_positions: Array = [] # size _squad_count, Vector2i or null
 var _selected_squad_index := -1
 
 var _zone_root: Node2D
 var _squad_marker_root: Node2D
-var _squad_markers: Array = [] # size SQUAD_COUNT, ColorRect or null
+var _squad_markers: Array = [] # size _squad_count, ColorRect or null
 var _squad_buttons: Array = []
 var _start_button: Button
 var _hint_label: Label
 
 func _ready() -> void:
+	if GameState.run_state == null:
+		# MissionPrep.tscn loaded directly (e.g. quick manual testing in the
+		# editor) without going through Main.gd first.
+		GameState.start_new_run(-1, "normal")
+	_roster = GameState.run_state.alive_commanders()
+	_squad_count = _roster.size()
+
 	var district_entry := DataLoader.districts.get_district(GameState.mission_district_id)
 	var mission_rng := GameState.make_rng("mission")
 	var gen_result := MapGenerator.generate(mission_rng.derive("map"), district_entry)
@@ -52,8 +65,8 @@ func _ready() -> void:
 	_squad_marker_root = Node2D.new()
 	add_child(_squad_marker_root)
 
-	_chosen_positions.resize(SQUAD_COUNT)
-	_squad_markers.resize(SQUAD_COUNT)
+	_chosen_positions.resize(_squad_count)
+	_squad_markers.resize(_squad_count)
 
 	_compute_deployment_zone()
 	_render_deployment_zone()
@@ -102,7 +115,7 @@ func _build_ui() -> void:
 	bottom_bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.add_child(bottom_bar)
 
-	for i in SQUAD_COUNT:
+	for i in _squad_count:
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(150, 48)
 		button.pressed.connect(_on_squad_button_pressed.bind(i))
@@ -141,7 +154,7 @@ func _on_tile_clicked(tile: Vector2i) -> void:
 	_update_ui()
 
 func _is_tile_taken_by_other_squad(tile: Vector2i, ignore_index: int) -> bool:
-	for i in SQUAD_COUNT:
+	for i in _squad_count:
 		if i != ignore_index and _chosen_positions[i] == tile:
 			return true
 	return false
@@ -163,12 +176,22 @@ func _refresh_squad_marker(index: int) -> void:
 	_squad_markers[index] = marker
 
 func _update_ui() -> void:
+	# Reachable now that squads persist across missions (RZ-141): every
+	# commander could have permadied. There's no run-over screen yet
+	# (RZ-089) — block Start with a clear message rather than letting the
+	# player walk into an empty mission that auto-loses on the first tick.
+	if _squad_count == 0:
+		_start_button.disabled = true
+		_hint_label.text = "No commanders remain — this run is over. (Run-over screen not built yet, RZ-089.)"
+		return
+
 	var all_placed := true
-	for i in SQUAD_COUNT:
+	for i in _squad_count:
 		var placed: bool = _chosen_positions[i] != null
 		if not placed:
 			all_placed = false
-		_squad_buttons[i].text = "Sq.%d %s" % [i + 1, "✓" if placed else "(place)"]
+		var commander_name: String = _roster[i].display_name if i < _roster.size() else "Sq.%d" % (i + 1)
+		_squad_buttons[i].text = "%s %s" % [commander_name, "✓" if placed else "(place)"]
 		_squad_buttons[i].button_pressed = (i == _selected_squad_index)
 
 	_start_button.disabled = not all_placed

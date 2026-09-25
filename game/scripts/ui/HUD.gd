@@ -47,15 +47,16 @@ func build(squad_count: int) -> void:
 	_ability_button.pressed.connect(func(): ability_button_pressed.emit())
 	bottom_bar.add_child(_ability_button)
 
-func update_squad_button(index: int, unit_count: int, is_selected: bool, is_wiped: bool) -> void:
+func update_squad_button(index: int, unit_count: int, is_selected: bool, is_wiped: bool, commander_name: String = "") -> void:
 	if index < 0 or index >= _squad_buttons.size():
 		return
+	var label := commander_name if commander_name != "" else "Sq.%d" % (index + 1)
 	var button: Button = _squad_buttons[index]
 	if is_wiped:
-		button.text = "Sq.%d ✕" % (index + 1)
+		button.text = "%s ✕" % label
 		button.disabled = true
 		return
-	button.text = "Sq.%d %s" % [index + 1, "●".repeat(unit_count)]
+	button.text = "%s %s" % [label, "●".repeat(unit_count)]
 	button.button_pressed = is_selected
 
 func update_wave_label(text: String) -> void:
