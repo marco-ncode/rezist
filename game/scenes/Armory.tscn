@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://armory_scene"]
+
+[ext_resource type="Script" path="res://scripts/ui/Armory.gd" id="1"]
+
+[node name="Armory" type="Control"]
+script = ExtResource("1")

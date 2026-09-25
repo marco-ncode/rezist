@@ -321,7 +321,17 @@ func _ease_time_scale(target: float) -> void:
 	tween.tween_property(Engine, "time_scale", target, 0.15)
 
 func _squad_ability_id(squad: Squad) -> String:
-	return DataLoader.units.get_unit_class(squad.unit_class).get("ability_id", "")
+	# class_data["ability_id"] is JSON null for a class with no ability
+	# (e.g. Recruit) — the key exists, so .get(key, "") does not fall back
+	# to "": returning it straight from a String-typed function would be a
+	# runtime type error the moment a Recruit-class squad reaches here
+	# (not exercised today — no promotion flow exists yet, RZ-087 — but a
+	# real landmine for whenever it does). Same explicit-ternary-into-a-
+	# typed-var pattern RunState.from_save_dict() already uses for the same
+	# nullable-JSON-field problem.
+	var class_data := DataLoader.units.get_unit_class(squad.unit_class)
+	var ability_id: String = class_data.get("ability_id", "") if class_data.get("ability_id") != null else ""
+	return ability_id
 
 func _refresh_hud() -> void:
 	for i in _squads.size():

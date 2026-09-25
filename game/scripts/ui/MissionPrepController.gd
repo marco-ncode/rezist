@@ -139,6 +139,19 @@ func _build_ui() -> void:
 	_start_button.pressed.connect(_on_start_pressed)
 	bottom_bar.add_child(_start_button)
 
+	# RZ-085: Armory entry point. Mission Prep is the natural stop between
+	# missions to spend gold earned from the last one before deploying the
+	# next — there's no Campaign Map (UX_UI.md's own reach point for it)
+	# yet, RZ-080/081/082.
+	var armory_button := Button.new()
+	armory_button.text = "Armory"
+	armory_button.custom_minimum_size = Vector2(96, 48)
+	armory_button.pressed.connect(_on_armory_pressed)
+	bottom_bar.add_child(armory_button)
+
+func _on_armory_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/Armory.tscn")
+
 func _on_squad_button_pressed(index: int) -> void:
 	_selected_squad_index = index
 	_update_ui()
