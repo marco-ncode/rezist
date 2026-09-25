@@ -210,9 +210,14 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 
 ---
 
-## 12. UI/UX Layer — `game/scenes/ui/`, `game/scripts/ui/`
+## 12. UI/UX Layer — `game/scenes/` (flat, no `ui/` subdirectory — deviates from this section's original path, same kind of pragmatic deviation as ADR-0010's test location), `game/scripts/ui/`
 
 **Responsibility:** HUD, squad selection, slow-mo trigger wiring, minimap, all menu screens (GDD §13).
+
+**Screens implemented so far** (all built entirely in code — `_ready()`/`_build_ui()` construct their node tree at runtime; the `.tscn` file is just a script-bearing root node, no hand-authored UI tree, so a themed pass (RZ-124) only ever has to touch `scripts/ui/`):
+- `scenes/MainMenu.tscn` + `scripts/ui/MainMenu.gd` (RZ-074) — New Run (opens an inline difficulty-select sub-panel per UX_UI.md §1, then `GameState.start_new_run()`), Continue (`SaveManager.load()`, disabled if no save at slot 0), Quit. `project.godot`'s `run/main_scene` is `scenes/Main.tscn`, a thin bootstrap that immediately hands off here. UX_UI.md's flow reads "→ Campaign Map"; both New Run and Continue instead go to Mission Prep, since the Campaign Map doesn't exist yet (RZ-080/081/082) — the same substitution `Main.gd` made before this screen existed.
+- `scenes/MissionPrep.tscn` + `scripts/ui/MissionPrepController.gd` (RZ-075) — deployment-tile selection, roster-aware since RZ-141.
+- `scripts/ui/HUD.gd` (no separate `.tscn` — instantiated directly by `MissionController`) — in-mission squad/ability buttons, wave indicator.
 
 **Public API:** scene-local, not consumed cross-module; communicates with `core/` exclusively through `scripts/` adapters (e.g. `scripts/mission/MissionController.gd` mediates between `HUD.gd` input and `core/squad/Squad.order_move_to`).
 
