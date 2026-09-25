@@ -11,15 +11,12 @@
 ## hand-authored .tscn UI tree).
 ##
 ## Continue only loads an *existing* save — nothing here ever calls
-## SaveManager.save(). No call site anywhere in the mission flow writes a
-## save yet (that's RZ-090's job: deciding when a run actually gets
-## persisted, e.g. after each mission), so in practice Continue stays
-## disabled until RZ-090 lands. It's wired now so RZ-090 only has to add
-## save call sites, not touch this menu again.
+## SaveManager.save(). RZ-090 added the missing write side: MissionController
+## now saves after every mission resolves, so Continue has something real to
+## load. Both sides share SaveManager.DEFAULT_SLOT (v1 is single-slot, no
+## slot-picker UI) rather than duplicating the slot number here.
 class_name MainMenuController
 extends Control
-
-const SAVE_SLOT := 0
 
 var _continue_button: Button
 var _root_menu: VBoxContainer
@@ -65,7 +62,7 @@ func _build_root_menu() -> void:
 	_continue_button = Button.new()
 	_continue_button.text = "Continue"
 	_continue_button.custom_minimum_size = Vector2(180, 48)
-	_continue_button.disabled = not SaveManager.has_save(SAVE_SLOT)
+	_continue_button.disabled = not SaveManager.has_save(SaveManager.DEFAULT_SLOT)
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_root_menu.add_child(_continue_button)
 
@@ -131,7 +128,7 @@ func _on_difficulty_selected(tier_id: String) -> void:
 	get_tree().change_scene_to_file("res://scenes/MissionPrep.tscn")
 
 func _on_continue_pressed() -> void:
-	var loaded := SaveManager.load(SAVE_SLOT)
+	var loaded := SaveManager.load(SaveManager.DEFAULT_SLOT)
 	if loaded == null:
 		return
 	GameState.run_state = loaded

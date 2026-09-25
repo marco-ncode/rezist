@@ -2,7 +2,7 @@
 
 Live snapshot of "where things actually stand," updated at the end of every work session. If this file and `docs/ROADMAP.md` disagree, trust this one for current state and `docs/ROADMAP.md` for the plan. Read this after `docs/ONBOARDING.md` and before picking a task from `docs/TASKS.md`.
 
-**Last updated:** 2026-09-25, Session 1 (see `AGENTS.md`), continuing on the `dev` branch. Most recent landed work: RZ-142 (exposed-commander last-stand combat), RZ-074 (Main Menu scene), RZ-088 (permadeath UI feedback).
+**Last updated:** 2026-09-25, Session 1 (see `AGENTS.md`), continuing on the `dev` branch. Most recent landed work: RZ-142 (exposed-commander last-stand combat), RZ-074 (Main Menu scene), RZ-088 (permadeath UI feedback), RZ-090 (mission-end autosave, wired to Continue).
 
 ---
 
@@ -38,7 +38,7 @@ python tools/validate_data.py   # → OK
 
 **Main Menu scene** (`game/scenes/MainMenu.tscn`, `game/scripts/ui/MainMenu.gd`, RZ-074):
 - New Run opens an inline difficulty-select sub-panel (Easy/Normal/Hard/Very Hard, read from `data/difficulty.json` via `DataLoader.difficulty`, plus an optional seed field) per UX_UI.md §1, then calls `GameState.start_new_run()` and transitions to Mission Prep. UX_UI.md's wireframe says New Run/Continue go to the Campaign Map — both go to Mission Prep instead here, since the Campaign Map doesn't exist yet (RZ-080/081/082)
-- Continue calls `SaveManager.load()`/`has_save()` against a single hardcoded save slot (`MainMenuController.SAVE_SLOT = 0`) — disabled when no save exists, which today is always, since nothing yet calls `SaveManager.save()` anywhere in the mission flow (RZ-090, see below)
+- Continue calls `SaveManager.load()`/`has_save()` against a single hardcoded save slot (`SaveManager.DEFAULT_SLOT = 0`) — disabled when no save exists. Since RZ-090 (see below), that's no longer always the case: `MissionController` now writes a save after every mission
 - Quit calls `get_tree().quit()`
 - No Settings screen (`docs/BACKLOG.md` marks it "Should", no spec exists to build from) and no save-slot selection UI (v1 is single-slot)
 
@@ -62,6 +62,7 @@ python tools/validate_data.py   # → OK
 - Safehouses take damage-state hits when a zombie reaches them unopposed; visuals update
 - Win (all waves cleared + battlefield clear) / lose (all squads wiped) both resolve to a simple HUD panel with gold payout
 - A commander's exposure and death (RZ-142) each get a dedicated moment (RZ-088): a fading HUD toast (`HUD.show_toast()`) plus a distinct audio cue (`commander_exposed`/`commander_died`) — "%s is exposed!" the tick their last unit dies, "%s has fallen." the tick they do. Backs up the squad button's own persistent "✕"/disabled state, which only tells the player if they happen to already be looking at the HUD bar.
+- **Every mission end now writes a save** (RZ-090): `_end_mission()` calls `SaveManager.save(GameState.run_state, SaveManager.DEFAULT_SLOT)` unconditionally, win or lose, right after roster metadata/gold are updated. This is the only save checkpoint that exists (no mid-mission saves, ADR-0007) and it's what makes the Main Menu's Continue button (RZ-074) actually usable in practice, not just correctly wired.
 - 9 audio events fire through `AudioManager.play_event()` (no real SFX yet, but the pipeline is proven end-to-end)
 
 **Tests** (`game/tests/`, run via `godot --headless --path game --script res://tests/run_tests.gd`):
@@ -76,8 +77,7 @@ python tools/validate_data.py   # → OK
 - **Marksman, Barricade classes' abilities** — data entries exist (`data/units.json`, `data/unit_abilities.json`), but `focused_ranged_burst`/`line_impale_charge` have no `Ability` subclass yet (RZ-048). `AbilityRegistry` and `DataLoader`'s boot-time check will `assert()`-fail loudly if you try to activate them, by design (ARCHITECTURE.md §6 invariant) — this is expected until RZ-048 lands, not a bug.
 - **Traits/relics beyond data** — all 10 traits and 8 relics are fully specified in `data/traits.json`/`data/relics.json` and `CombatResolver`/`Economy` already read trait modifiers generically, but relics have no runtime effect implementation yet (no `RelicEffect` system exists — tracked as RZ-109).
 - **Campaign layer** — `CampaignGenerator`, `CampaignState`, the Campaign Map scene, fog of war, split-the-party: none exist yet (RZ-080/081/082/084). The vertical slice plays exactly one hardcoded district. `RunState.campaign_state` is a placeholder Dictionary shaped like the save schema, ready for these to populate once they exist.
-- **`SaveManager.save()` isn't called from anywhere in the mission flow yet** — there's no natural "end of mission, offer to save" moment implemented. The Main Menu's Continue button is fully wired to *load* a save (RZ-074), but since nothing ever *writes* one, it's disabled in every real session today. Tracked as RZ-090.
-- **Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-085, RZ-086, RZ-089). There's a Main Menu now (RZ-074) but no way to view the roster or spend gold outside a mission yet, and a total wipe just leaves `[Start]` disabled on Mission Prep with a text message rather than a real run-over screen.
+- **Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-085, RZ-086, RZ-089). There's a Main Menu now (RZ-074) and mission-end saving now works (RZ-090), but there's still no way to view the roster or spend gold outside a mission, and a total wipe just leaves `[Start]` disabled on Mission Prep with a text message rather than a real run-over screen.
 - **Danger indicator, minimap** — not implemented (RZ-068, RZ-127).
 - **Enemy types beyond the 3 wired into the default wave set** — Spitter, Brute Spitter, Thrower, Leaper, Colossus all have full `data/enemies.json` entries and `EnemyAI` behaviors already support their `behavior` values generically, but no wave_set currently spawns them except `transit_hub_5wave` (unused by the vertical slice's hardcoded `residential` district).
 - **Real art/audio** — 100% primitive placeholder (`ColorRect`s, palette-matched) per ADR-0008/`docs/ASSET_PIPELINE.md`. No audio streams at all yet, only the event pipeline.
@@ -104,9 +104,9 @@ godot --headless --path game --script res://tests/run_tests.gd
 
 ## Next 3 Tasks (recommended order)
 
-1. **RZ-090 — Save/Load wired to Main Menu "Continue."** The Continue button itself is already fully wired (RZ-074) — what's missing is a call to `SaveManager.save()` somewhere sensible in the mission flow (e.g. after each mission resolves) so there's actually something for Continue to load.
-2. **RZ-089 — Run-over detection (total wipe) + summary screen.** Today a total wipe just leaves `[Start]` disabled on Mission Prep with a text message ("this run is over") — there's no actual Game Over / Run Summary screen (UX_UI.md §8) with a way to start a new run from there. `RunState.is_run_over()` already detects the wipe correctly; nothing consumes it yet.
-3. Open the project in the actual Godot editor and playtest Main → Main Menu → Mission Prep → Mission → (repeat) by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right). In particular: verify the new Main Menu's difficulty sub-panel reads clearly, deployment-zone tiles are visually distinct enough, squad buttons showing real commander names read well, a squad's unit count visibly carrying over between missions is legible without a number (ADR-0005), that an exposed last-stand commander (RZ-142) reads clearly as "vulnerable" on screen (currently just a slightly larger amber square, same color as a normal commander marker), and that the new RZ-088 permadeath toasts are readable/well-timed rather than flashing past too fast.
+1. **RZ-089 — Run-over detection (total wipe) + summary screen.** Today a total wipe just leaves `[Start]` disabled on Mission Prep with a text message ("this run is over") — there's no actual Game Over / Run Summary screen (UX_UI.md §8) with a way to start a new run from there. `RunState.is_run_over()` already detects the wipe correctly; nothing consumes it yet.
+2. **RZ-086 — Roster/Commander screen.** Spec exists (UX_UI.md §7), its only dependency (RZ-054) is done, and it's now more useful than before RZ-090: a player picking Continue on the Main Menu has no way to see who's in the roster, their trait/relic, or the fallen-commander history before jumping into Mission Prep.
+3. Open the project in the actual Godot editor and playtest Main → Main Menu → Mission Prep → Mission → (repeat) by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right). In particular: verify the new Main Menu's difficulty sub-panel reads clearly, that Continue actually offers a save after playing one mission and loading it resumes the right roster/gold state (RZ-090), deployment-zone tiles are visually distinct enough, squad buttons showing real commander names read well, a squad's unit count visibly carrying over between missions is legible without a number (ADR-0005), that an exposed last-stand commander (RZ-142) reads clearly as "vulnerable" on screen (currently just a slightly larger amber square, same color as a normal commander marker), and that the RZ-088 permadeath toasts are readable/well-timed rather than flashing past too fast.
 
 ## Known Simplifications (intentional, not bugs)
 

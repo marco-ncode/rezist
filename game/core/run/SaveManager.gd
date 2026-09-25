@@ -12,6 +12,13 @@ extends RefCounted
 
 const SAVE_DIR := "user://saves"
 
+## v1 has no save-slot picker UI (single slot) — RZ-090's mission-end
+## autosave and MainMenuController's Continue button both save/load this
+## same slot, so the constant lives here rather than being duplicated (or
+## owned by one and reached into by the other, which would wire `scripts/ui/`
+## and `scripts/mission/` together for no reason).
+const DEFAULT_SLOT := 0
+
 static func _slot_path(slot: int) -> String:
 	return "%s/slot_%d.json" % [SAVE_DIR, slot]
 

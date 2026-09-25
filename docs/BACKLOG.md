@@ -106,7 +106,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-087 | Hero rescue mission variant (trapped survivor tile + recruit-on-win) | Should | M | RZ-052,054 | engine | Backlog |
 | RZ-088 | Permadeath flow: commander death → squad removal → UI feedback | Must | M | RZ-141 ✅,RZ-142 ✅,046 ✅ | engine | Done |
 | RZ-089 | Run-over detection (total wipe / campaign complete) + summary screen | Must | M | RZ-054,081 | ui | Backlog |
-| RZ-090 | Save/Load wired to Main Menu "Continue" — the Continue button itself already calls `SaveManager.load()`/`has_save()` (landed with RZ-074); what's left is deciding when a run actually gets *written* — nothing in the mission flow calls `SaveManager.save()` yet, so Continue is permanently disabled in practice until this lands | Must | M | RZ-055 ✅,074 ✅ | engine | Backlog |
+| RZ-090 | Save/Load wired to Main Menu "Continue" — the Continue button itself already calls `SaveManager.load()`/`has_save()` (landed with RZ-074); what's left is deciding when a run actually gets *written* — nothing in the mission flow calls `SaveManager.save()` yet, so Continue is permanently disabled in practice until this lands | Must | M | RZ-055 ✅,074 ✅ | engine | Done |
 | RZ-091 | Difficulty selection (Easy/Normal/Hard/Very Hard) at run start | Should | S | RZ-028,080 | ui | Backlog |
 | RZ-092 | Checkpoint nodes on campaign graph | Could | S | RZ-081 | engine | Backlog |
 | RZ-141 | Wire `RunState` into `Main.gd`/`MissionController.gd` (roster persistence, permadeath → `RunState`, gold → `RunState`) | Must | M | RZ-054 ✅ | engine | Done |

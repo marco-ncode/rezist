@@ -189,6 +189,7 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 - `RunState.to_save_dict() -> Dictionary` / `RunState.from_save_dict(data: Dictionary) -> RunState` — schemas/save_file.schema.json shape.
 - `SaveManager.save(run_state, slot: int) -> void`
 - `SaveManager.load(slot: int) -> RunState` — null if the slot doesn't exist.
+- `SaveManager.DEFAULT_SLOT: int` (= `0`) — v1 has no save-slot picker UI; `scripts/ui/MainMenu.gd`'s Continue button and `scripts/mission/MissionController.gd`'s mission-end autosave (RZ-090) both read/write this same constant rather than duplicating the slot number in each `scripts/` layer.
 
 **Depends on:** `core/campaign/` (not yet implemented — `campaign_state` is currently a placeholder Dictionary matching the save schema's shape until RZ-080/RZ-081 land), `core/squad/` (`Commander`, for identity/permadeath), JSON serialization (engine `FileAccess`/`DirAccess`, isolated behind `SaveManager`).
 
@@ -215,7 +216,7 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Responsibility:** HUD, squad selection, slow-mo trigger wiring, minimap, all menu screens (GDD §13).
 
 **Screens implemented so far** (all built entirely in code — `_ready()`/`_build_ui()` construct their node tree at runtime; the `.tscn` file is just a script-bearing root node, no hand-authored UI tree, so a themed pass (RZ-124) only ever has to touch `scripts/ui/`):
-- `scenes/MainMenu.tscn` + `scripts/ui/MainMenu.gd` (RZ-074) — New Run (opens an inline difficulty-select sub-panel per UX_UI.md §1, then `GameState.start_new_run()`), Continue (`SaveManager.load()`, disabled if no save at slot 0), Quit. `project.godot`'s `run/main_scene` is `scenes/Main.tscn`, a thin bootstrap that immediately hands off here. UX_UI.md's flow reads "→ Campaign Map"; both New Run and Continue instead go to Mission Prep, since the Campaign Map doesn't exist yet (RZ-080/081/082) — the same substitution `Main.gd` made before this screen existed.
+- `scenes/MainMenu.tscn` + `scripts/ui/MainMenu.gd` (RZ-074) — New Run (opens an inline difficulty-select sub-panel per UX_UI.md §1, then `GameState.start_new_run()`), Continue (`SaveManager.load(SaveManager.DEFAULT_SLOT)`, disabled if no save exists there — actually reachable since RZ-090, see §10), Quit. `project.godot`'s `run/main_scene` is `scenes/Main.tscn`, a thin bootstrap that immediately hands off here. UX_UI.md's flow reads "→ Campaign Map"; both New Run and Continue instead go to Mission Prep, since the Campaign Map doesn't exist yet (RZ-080/081/082) — the same substitution `Main.gd` made before this screen existed.
 - `scenes/MissionPrep.tscn` + `scripts/ui/MissionPrepController.gd` (RZ-075) — deployment-tile selection, roster-aware since RZ-141.
 - `scripts/ui/HUD.gd` (no separate `.tscn` — instantiated directly by `MissionController`) — in-mission squad/ability buttons, wave indicator, and (RZ-088) `HUD.show_toast(text, duration)`: a self-fading center-top label for a permadeath "moment" (commander exposed/fallen) that the squad button's persistent post-hoc state (its "✕"/disabled look, set every `_refresh_hud()` tick) doesn't call attention to on its own.
 

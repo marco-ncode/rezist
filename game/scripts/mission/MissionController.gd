@@ -390,5 +390,13 @@ func _end_mission(won: bool) -> void:
 	for squad in surviving_squads:
 		GameState.run_state.update_roster_meta(squad.commander.id, squad.unit_class, squad.level, squad.unit_count())
 
+	# RZ-090: mission end is the run's only real "checkpoint" so far (no mid-
+	# mission saves, ADR-0007) — persist unconditionally, win or lose, so the
+	# Main Menu's Continue button (RZ-074, load-only) actually has an
+	# up-to-date save to load. A total wipe still gets saved as-is; there's no
+	# run-over screen yet (RZ-089) to decide whether that should instead
+	# delete the save, so this is the simplest correct behavior for now.
+	SaveManager.save(GameState.run_state, SaveManager.DEFAULT_SLOT)
+
 	AudioManager.play_event("mission_won" if won else "mission_lost")
 	_hud.show_resolution(won, safehouses_saved, _safehouses.size(), gold_earned)
