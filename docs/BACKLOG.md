@@ -157,6 +157,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-138 | Export presets (Windows/Linux/macOS) | Should | S | RZ-137 | tooling | Backlog |
 | RZ-139 | Fix `UnitData.get_class()` naming collision with native `Object.get_class()` | Must | S | RZ-044 | engine | Done |
 | RZ-140 | Fix missing type annotation on `staggered` in `CombatResolver.gd:49` | Must | S | RZ-045 | engine | Done |
+| RZ-143 | Fix `EnemyAI.gd`/`MissionController.gd` failing to load in the real engine (`Vector2i.dot()` doesn't exist; two `:=`-inferred-from-Variant errors each) — present since the original bootstrap commit, silently masked because no test file ever loads either script and every past "CI confirmed green" check only read the Passed/Failed summary line, never the full `--import` log | Must | S | RZ-049,062 | engine | Done |
 
 ## Section H — Won't (yet) — explicitly deferred, tracked not forgotten
 

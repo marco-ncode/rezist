@@ -26,8 +26,12 @@ static func _test_exposure_transition_fires_once(reporter: TestReporter) -> void
 	var commander := Commander.new("c1", "Cmdr", Commander.DEFAULT_MAX_HP)
 	var squad := Squad.new("sq1", commander, "recruit", 1, unit_data, [Vector2i(2, 2), Vector2i(3, 3)], Vector2i(5, 5))
 
-	var exposure_count := 0
-	squad.commander_lost.connect(func(_s): exposure_count += 1)
+	# A plain `int` captured by a lambda is captured by value in GDScript —
+	# mutating it inside the closure does not affect the outer variable. A
+	# single-element Array is a reference type, so mutating its contents
+	# does.
+	var exposure_count := [0]
+	squad.commander_lost.connect(func(_s): exposure_count[0] += 1)
 
 	var grid := TacticalGrid.new(10, 10)
 	var rng := SimRng.new(1)
@@ -37,13 +41,13 @@ static func _test_exposure_transition_fires_once(reporter: TestReporter) -> void
 		unit.apply_damage(9999)
 
 	squad.tick(0.1, grid, {"enemies": [], "rng": rng, "trait_data": trait_data})
-	reporter.expect_eq(exposure_count, 1, "commander_lost fires exactly once on the exposure transition")
+	reporter.expect_eq(exposure_count[0], 1, "commander_lost fires exactly once on the exposure transition")
 	reporter.expect_eq(squad.unit_count(), 0, "squad has 0 units after all die")
 	reporter.expect_true(commander.alive, "commander survives the squad wipe (last stand)")
 	reporter.expect_eq(commander.position, Vector2i(3, 3), "commander takes the last-processed unit's position on exposure")
 
 	squad.tick(0.1, grid, {"enemies": [], "rng": rng, "trait_data": trait_data})
-	reporter.expect_eq(exposure_count, 1, "commander_lost does not re-fire on a later empty-unit tick")
+	reporter.expect_eq(exposure_count[0], 1, "commander_lost does not re-fire on a later empty-unit tick")
 
 static func _test_zero_unit_squad_exposed_immediately(reporter: TestReporter) -> void:
 	var unit_data := _make_unit_data()
@@ -51,14 +55,14 @@ static func _test_zero_unit_squad_exposed_immediately(reporter: TestReporter) ->
 	var squad := Squad.new("sq2", commander, "recruit", 1, unit_data, [], Vector2i(7, 7))
 	reporter.expect_eq(commander.position, Vector2i(7, 7), "commander position defaults to deployment_center for a squad spawned with 0 units")
 
-	var exposure_count := 0
-	squad.commander_lost.connect(func(_s): exposure_count += 1)
+	var exposure_count := [0]
+	squad.commander_lost.connect(func(_s): exposure_count[0] += 1)
 	var grid := TacticalGrid.new(10, 10)
 	var rng := SimRng.new(1)
 	var trait_data := TraitData.new({"traits": []})
 
 	squad.tick(0.1, grid, {"enemies": [], "rng": rng, "trait_data": trait_data})
-	reporter.expect_eq(exposure_count, 1, "commander_lost fires on the first tick for a squad that starts with 0 units")
+	reporter.expect_eq(exposure_count[0], 1, "commander_lost fires on the first tick for a squad that starts with 0 units")
 	reporter.expect_eq(commander.position, Vector2i(7, 7), "commander position is unchanged (no unit to inherit a position from)")
 
 static func _test_commander_is_valid_combat_target(reporter: TestReporter) -> void:
@@ -80,11 +84,11 @@ static func _test_commander_is_valid_combat_target(reporter: TestReporter) -> vo
 
 static func _test_commander_death_signal_fires(reporter: TestReporter) -> void:
 	var commander := Commander.new("c4", "Cmdr4", 1)
-	var died_count := 0
-	commander.died.connect(func(_c): died_count += 1)
+	var died_count := [0]
+	commander.died.connect(func(_c): died_count[0] += 1)
 
 	commander.apply_damage(1)
-	reporter.expect_eq(died_count, 1, "died signal fires exactly once when hp reaches 0")
+	reporter.expect_eq(died_count[0], 1, "died signal fires exactly once when hp reaches 0")
 
 	commander.apply_damage(1)
-	reporter.expect_eq(died_count, 1, "died does not re-fire once already dead")
+	reporter.expect_eq(died_count[0], 1, "died does not re-fire once already dead")

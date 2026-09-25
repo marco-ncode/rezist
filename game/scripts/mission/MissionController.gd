@@ -223,7 +223,7 @@ func _physics_process(delta: float) -> void:
 	for squad in _squads:
 		if squad.is_wiped():
 			continue
-		var pre_count := squad.unit_count()
+		var pre_count: int = squad.unit_count()
 		squad.tick(delta, _grid, combat_context)
 		if squad.unit_count() < pre_count:
 			AudioManager.play_event("unit_death_ally")
@@ -328,7 +328,7 @@ func _refresh_hud() -> void:
 		_hud.update_squad_button(i, squad.unit_count(), i == _selected_squad_index, squad.is_wiped(), squad.commander.display_name)
 	var wave_text := "Wave %d/%d" % [_wave_controller.current_wave_number(), _wave_controller.total_waves]
 	_hud.update_wave_label(wave_text)
-	var ability_ready := _selected_squad_index >= 0 and not _squads[_selected_squad_index].is_wiped() \
+	var ability_ready: bool = _selected_squad_index >= 0 and not _squads[_selected_squad_index].is_wiped() \
 		and _squads[_selected_squad_index].ability_cooldown_remaining <= 0.0
 	_hud.update_ability_button(ability_ready, "Breach" if _ability_target_mode else "Ability")
 

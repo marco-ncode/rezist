@@ -46,7 +46,7 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 			events["result"] = result
 		return events
 
-	var objective := _pick_objective(enemy, target_unit, safehouses)
+	var objective: Variant = _pick_objective(enemy, target_unit, safehouses)
 	if objective == null:
 		return events
 
@@ -56,7 +56,7 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 
 	if enemy.in_range_of(objective) and objective is Vector2i and _objective_is_safehouse(objective, safehouses):
 		if enemy.attack_cooldown_remaining <= 0.0:
-			var safehouse := _safehouse_at(objective, safehouses)
+			var safehouse: Variant = _safehouse_at(objective, safehouses)
 			if safehouse != null:
 				safehouse.take_hit()
 				enemy.attack_cooldown_remaining = Enemy.ATTACK_INTERVAL
@@ -105,5 +105,8 @@ static func _is_frontal_attack(enemy: Enemy, unit) -> bool:
 	# Simplified frontal check: an attack is frontal if the enemy is roughly
 	# ahead of the unit's last movement facing. Good enough for v1 shield
 	# mechanics; a full facing-arc model is tracked as future balance work.
+	# Vector2i has no dot() (only the float Vector2 does), so the dot
+	# product is computed by hand here.
 	var to_enemy: Vector2i = enemy.position - unit.position
-	return to_enemy.dot(unit.facing) >= 0
+	var facing: Vector2i = unit.facing
+	return (to_enemy.x * facing.x + to_enemy.y * facing.y) >= 0
