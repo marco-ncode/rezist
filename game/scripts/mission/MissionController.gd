@@ -130,7 +130,7 @@ func _spawn_squads() -> void:
 			else center + Vector2i(i - 1, 2)
 		var spawn_positions := _pick_spawn_positions(squad_center, unit_count, used_positions)
 
-		var squad := Squad.new("sq_%d" % i, commander, unit_class, level, DataLoader.units, spawn_positions)
+		var squad := Squad.new("sq_%d" % i, commander, unit_class, level, DataLoader.units, spawn_positions, squad_center)
 		squad.wiped.connect(_on_squad_wiped.bind(i))
 		squad.commander_lost.connect(_on_commander_exposed)
 		_squads.append(squad)
@@ -166,6 +166,21 @@ func _create_unit_view(unit: Unit, squad_index: int) -> void:
 	_unit_view_root.add_child(rect)
 	_unit_views[unit.id] = rect
 
+## RZ-142: last-stand marker for an exposed commander (0 units left, still
+## alive). Reuses _unit_views (keyed by commander.id, distinct from any
+## unit.id) so it's cleaned up the same way as a regular unit view. Always
+## COMMANDER_ACCENT — ART_BIBLE.md's amber is "player-controlled," and an
+## exposed commander is still exactly that, just critically vulnerable.
+func _create_commander_view(commander: Commander) -> void:
+	if _unit_views.has(commander.id):
+		return
+	var rect := ColorRect.new()
+	rect.size = Vector2(TILE_SIZE * 0.55, TILE_SIZE * 0.55)
+	rect.color = COMMANDER_ACCENT
+	rect.position = GridRendererScript.tile_to_screen(commander.position, _grid.elevation_at(commander.position)) + Vector2(TILE_SIZE * 0.225, TILE_SIZE * 0.225)
+	_unit_view_root.add_child(rect)
+	_unit_views[commander.id] = rect
+
 func _create_enemy_view(enemy: Enemy) -> void:
 	var rect := ColorRect.new()
 	rect.size = Vector2(TILE_SIZE * 0.45, TILE_SIZE * 0.45)
@@ -194,6 +209,12 @@ func _physics_process(delta: float) -> void:
 		all_units.append_array(squad.units)
 		for unit in squad.units:
 			unit_traits_by_id[unit.id] = squad.commander.traits()
+		# RZ-142: an exposed commander (0 units, still alive) is a valid
+		# EnemyAI target in their own right — duck-typed like Unit (see
+		# EnemyAI.gd's header comment and Commander.to_combat_data()).
+		if squad.units.is_empty() and squad.commander.alive:
+			all_units.append(squad.commander)
+			unit_traits_by_id[squad.commander.id] = squad.commander.traits()
 
 	var combat_context := {
 		"enemies": _active_enemies, "rng": _tick_rng, "trait_data": trait_data,
@@ -311,11 +332,20 @@ func _refresh_hud() -> void:
 		and _squads[_selected_squad_index].ability_cooldown_remaining <= 0.0
 	_hud.update_ability_button(ability_ready, "Breach" if _ability_target_mode else "Ability")
 
-func _on_squad_wiped(_squad: Squad, _index: int) -> void:
+func _on_squad_wiped(squad: Squad, _index: int) -> void:
 	AudioManager.play_event("commander_died")
+	if _unit_views.has(squad.commander.id):
+		_unit_views[squad.commander.id].queue_free()
+		_unit_views.erase(squad.commander.id)
 
-func _on_commander_exposed(_squad: Squad) -> void:
-	pass # Bad North rule: the commander alone still fights on; no extra action needed here in v1.
+## RZ-142: Bad North rule — the commander alone still fights on. They don't
+## flee or relocate; they just become visible and vulnerable at their last
+## position (Squad._prune_dead_units() already set commander.position).
+## Actual targeting/damage is handled generically by MissionController
+## including them in `all_units` — nothing extra needed here beyond the
+## visual.
+func _on_commander_exposed(squad: Squad) -> void:
+	_create_commander_view(squad.commander)
 
 func _check_mission_end() -> void:
 	var all_wiped := true

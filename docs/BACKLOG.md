@@ -90,7 +90,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-073 | Placeholder art pass: tiles, units, zombies, safehouses (primitive shapes/colors) | Must | M | RZ-061,065,066 | art | Done |
 | RZ-074 | Main Menu scene (New Run / Continue / Settings / Quit) | Should | S | RZ-060 | ui | Backlog |
 | RZ-075 | Mission Prep screen (deploy squads before wave 1) | Must | M | RZ-062 | ui | Done |
-| RZ-142 | Implement exposed-commander vulnerability (last-stand combat) — today `Commander.apply_damage()`/`die()` are never called anywhere in a live mission, so permadeath cannot actually trigger through normal play even though `Squad.commander_lost` fires correctly when a squad's last unit dies | Must | M | RZ-046,049 | engine | Backlog |
+| RZ-142 | Implement exposed-commander vulnerability (last-stand combat) — today `Commander.apply_damage()`/`die()` are never called anywhere in a live mission, so permadeath cannot actually trigger through normal play even though `Squad.commander_lost` fires correctly when a squad's last unit dies | Must | M | RZ-046,049 | engine | Done |
 
 ## Section D — M2 Run Systems
 
@@ -104,7 +104,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-085 | Armory/Upgrade screen (spend gold on class levels/abilities/relics) | Must | L | RZ-051,067 | ui | Backlog |
 | RZ-086 | Roster/Commander screen (traits, equipped relic, alive/dead history) | Should | M | RZ-054 | ui | Backlog |
 | RZ-087 | Hero rescue mission variant (trapped survivor tile + recruit-on-win) | Should | M | RZ-052,054 | engine | Backlog |
-| RZ-088 | Permadeath flow: commander death → squad removal → UI feedback | Must | M | RZ-141 ✅,RZ-142,046 | engine | Backlog |
+| RZ-088 | Permadeath flow: commander death → squad removal → UI feedback | Must | M | RZ-141 ✅,RZ-142 ✅,046 ✅ | engine | Backlog |
 | RZ-089 | Run-over detection (total wipe / campaign complete) + summary screen | Must | M | RZ-054,081 | ui | Backlog |
 | RZ-090 | Save/Load wired to Main Menu "Continue" | Must | M | RZ-055,074 | engine | Backlog |
 | RZ-091 | Difficulty selection (Easy/Normal/Hard/Very Hard) at run start | Should | S | RZ-028,080 | ui | Backlog |

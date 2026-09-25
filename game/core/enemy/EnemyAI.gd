@@ -3,11 +3,16 @@
 ## branching. New enemy types are data-only additions as long as they reuse
 ## an existing behavior value.
 ##
-## Targets: enemies prioritize the nearest allied Unit within `aggro_range`
+## Targets: enemies prioritize the nearest allied target within `aggro_range`
 ## tiles; if none is in range, they path toward the nearest Safehouse. This
 ## single rule, combined with each type's `range`/`speed`/`behavior`, is
 ## enough to produce the distinct feel documented in GDD §10 without
 ## needing bespoke code per type.
+##
+## `all_units` targets are duck-typed, not strictly `Unit` — an exposed,
+## last-stand `Commander` (RZ-142) is also valid as long as it exposes
+## `position`, `facing`, `id`, `is_alive()`, `apply_damage(int)`, and
+## `to_combat_data(traits: Array) -> Dictionary`, which `Commander.gd` does.
 class_name EnemyAI
 extends RefCounted
 
@@ -20,7 +25,7 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 		all_units: Array, safehouses: Array, combat_context: Dictionary) -> Dictionary:
 	enemy.attack_cooldown_remaining = maxf(0.0, enemy.attack_cooldown_remaining - delta)
 
-	var target_unit: Unit = _nearest_unit_in_aggro(enemy, all_units)
+	var target_unit = _nearest_unit_in_aggro(enemy, all_units) # Unit or exposed Commander (RZ-142), duck-typed
 	var events := {"attacked_unit": null, "attacked_safehouse": null, "result": null}
 
 	if target_unit != null and enemy.in_range_of(target_unit.position):
@@ -96,7 +101,7 @@ static func _safehouse_at(pos: Vector2i, safehouses: Array) -> Variant:
 			return safehouse
 	return null
 
-static func _is_frontal_attack(enemy: Enemy, unit: Unit) -> bool:
+static func _is_frontal_attack(enemy: Enemy, unit) -> bool:
 	# Simplified frontal check: an attack is frontal if the enemy is roughly
 	# ahead of the unit's last movement facing. Good enough for v1 shield
 	# mechanics; a full facing-arc model is tracked as future balance work.

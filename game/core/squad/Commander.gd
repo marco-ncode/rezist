@@ -23,6 +23,16 @@ var hp: int
 var max_hp: int
 var alive: bool = true
 
+## RZ-142: last-stand combat. Once a squad's rank-and-file are all dead
+## (Squad.commander_lost), the commander stands alone at `position` and
+## becomes a valid EnemyAI target — duck-typed the same way Unit/Enemy are
+## (get position via the `position` field, `is_alive()`, `apply_damage()`,
+## `to_combat_data()`). By default the commander does not fight back
+## (`damage: 0` below) per GDD's "commander fights on alone" rule — only
+## the (not yet implemented) Mountain trait changes that.
+var position: Vector2i = Vector2i.ZERO
+var facing: Vector2i = Vector2i(0, 1)
+
 func _init(p_id: String, p_display_name: String, p_max_hp: int, p_trait_id: String = "", p_relic_id: String = "") -> void:
 	id = p_id
 	display_name = p_display_name
@@ -57,3 +67,20 @@ func restore_state(p_alive: bool) -> void:
 
 func traits() -> Array:
 	return [trait_id] if trait_id != "" else []
+
+func is_alive() -> bool:
+	return alive
+
+## Dictionary shape consumed by CombatResolver as a `defender` — matches
+## Unit.to_combat_data()'s shape so EnemyAI can target an exposed commander
+## with no special-casing (ADR-0006).
+func to_combat_data(p_traits: Array) -> Dictionary:
+	return {
+		"damage": 0,
+		"attack_type": "melee",
+		"armor_type": "none",
+		"blocks_ranged_frontal": false,
+		"weak_to": null,
+		"knockback_immune": false,
+		"traits": p_traits,
+	}

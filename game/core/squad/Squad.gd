@@ -22,9 +22,10 @@ var units: Array = [] # Array[Unit]
 var base_max_size: int
 var _unit_paths: Dictionary = {} # unit.id -> {"path": Array, "index": int, "progress": float}
 var ability_cooldown_remaining: float = 0.0
+var _is_exposed := false # RZ-142: true once commander_lost has fired
 
 func _init(p_id: String, p_commander: Commander, p_unit_class: String, p_level: int,
-		unit_data: UnitData, spawn_positions: Array) -> void:
+		unit_data: UnitData, spawn_positions: Array, deployment_center: Vector2i = Vector2i.ZERO) -> void:
 	id = p_id
 	commander = p_commander
 	unit_class = p_unit_class
@@ -38,6 +39,12 @@ func _init(p_id: String, p_commander: Commander, p_unit_class: String, p_level: 
 	for i in spawn_positions.size():
 		var unit := Unit.new("%s_u%d" % [p_id, i], level_stats, class_data, spawn_positions[i])
 		units.append(unit)
+
+	# RZ-142: the commander always has a grid position, even for a squad that
+	# starts with 0 units (a roster entry that lost all its soldiers in a
+	# previous mission) — otherwise there'd be no position to make them
+	# targetable at until the first tick's exposure transition runs.
+	commander.position = spawn_positions[0] if not spawn_positions.is_empty() else deployment_center
 
 func max_size(trait_data: TraitData = null, relic_bonus: int = 0) -> int:
 	var bonus := 0
@@ -147,8 +154,16 @@ func _advance_unit(unit: Unit, delta: float, grid: TacticalGrid) -> void:
 	_unit_paths[unit.id] = path_state
 
 func _prune_dead_units() -> void:
+	var pre_filter_units := units
 	units = units.filter(func(u: Unit): return u.is_alive())
-	if units.is_empty() and commander.alive:
+	if units.is_empty() and commander.alive and not _is_exposed:
+		_is_exposed = true
+		# The commander takes a last stand wherever the last unit fell —
+		# only set once, on the transition into exposure, so the commander
+		# doesn't get silently relocated by a later tick that finds
+		# `units` still empty.
+		if not pre_filter_units.is_empty():
+			commander.position = pre_filter_units.back().position
 		commander_lost.emit(self)
 
 func _on_commander_died(_commander: Commander) -> void:

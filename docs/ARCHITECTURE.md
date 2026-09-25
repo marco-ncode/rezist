@@ -80,17 +80,19 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Responsibility:** group of units under one commander; formation, autonomous movement/engagement, permadeath.
 
 **Public API:**
-- `Squad.new(commander: Commander, unit_class: String, level: int, count: int)`
+- `Squad.new(id: String, commander: Commander, unit_class: String, level: int, unit_data: UnitData, spawn_positions: Array, deployment_center: Vector2i = Vector2i.ZERO)` — `deployment_center` is where `commander.position` defaults to for a squad that starts with 0 units (a roster entry that lost all its soldiers in a previous mission); otherwise the commander starts at `spawn_positions[0]`.
 - `Squad.order_move_to(target_tile: Vector2i, grid) -> void` — the **only** player-facing command (calls `AStarPathfinder`'s static API internally).
-- `Squad.tick(delta, grid, combat_context) -> void` — autonomous per-unit behavior (advance, engage nearest valid target in range, retreat if isolated).
+- `Squad.tick(delta, grid, combat_context) -> void` — autonomous per-unit behavior (advance, engage nearest valid target in range, retreat if isolated). Once `units` is empty, transitions the squad into "exposed" exactly once (see `commander_lost` below).
 - `Squad.unit_count() -> int` (this **is** the squad's visible "health" per GDD pillar 3)
 - `Squad.is_wiped() -> bool`
+- `Squad.commander_lost(squad: Squad)` signal — fires exactly once, the tick a squad's rank-and-file are all dead (or immediately, for a squad that starts with 0 units). `MissionController._on_commander_exposed()` reacts by making the commander visible on the grid.
 - `Squad.disconnect_commander_signal() -> void` — **must** be called (e.g. from the owning scene's `_exit_tree()`) when a Squad is discarded, if `commander` outlives it. Since RZ-141, `Commander` objects persist across missions in `RunState.commanders`; `Squad._init()` connects `commander.died` to a bound method on itself, and that connection holds a live reference to the Squad. Skipping this leaks one stale Squad (and its Units) per mission — `RefCounted` has no cycle collector.
 - `Commander.die() -> void` → triggers permadeath (emits `died`, consumed by both `Squad._on_commander_died` — mission-local `wiped` signal — and `core/run/RunState.on_commander_died` when the commander came from a `RunState` roster).
+- `Commander.to_combat_data(traits: Array) -> Dictionary` — duck-typed combat interface (RZ-142), same dictionary shape `Unit.to_combat_data()` produces. Lets `EnemyAI` target an exposed commander with zero special-casing (ADR-0006). Commander deals `damage: 0` — per GDD's "commander fights on alone" rule they don't fight back by default; only the (not yet implemented) Mountain trait would change that.
 
 **Depends on:** `core/grid/`, `core/pathfinding/`, `core/combat/CombatResolver.gd`, `data_runtime/UnitData.gd`, `data_runtime/TraitData.gd`.
 
-**Invariants:** a `Squad` with `unit_count() == 0` has no commander check left to make — commander death is the sole permadeath trigger (a squad can lose all rank-and-file units and still exist as just the commander per Bad North's own rule: **the commander is the last unit standing and fights personally** — not yet enforced in combat, RZ-142). Squad max size is `base_max_size + trait/relic modifiers` (`Popular` trait, `Tactical Radio` relic), computed, never stored as a separate mutable field to avoid desync.
+**Invariants:** a `Squad` with `unit_count() == 0` has no commander check left to make — commander death is the sole permadeath trigger. A squad that loses all rank-and-file units still exists as just the commander per Bad North's own rule: **the commander is the last unit standing and fights personally** — the commander takes the last-processed unit's grid position, becomes a valid `EnemyAI` target via `to_combat_data()`, and is included in `MissionController`'s `all_units` passed to `EnemyAI.tick_enemy()` (RZ-142; this is how permadeath actually becomes reachable through normal play, not just theoretically wired). The commander does not move or flee once exposed — no pathing logic was added, matching Bad North's own behavior. Squad max size is `base_max_size + trait/relic modifiers` (`Popular` trait, `Tactical Radio` relic), computed, never stored as a separate mutable field to avoid desync.
 
 ---
 
@@ -129,7 +131,7 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Responsibility:** per-enemy-type behavior state machine (advance/attack/flee-never per GDD bestiary) and wave-to-wave scaling.
 
 **Public API:**
-- `EnemyAI.tick_enemy(enemy: Enemy, delta: float, grid, all_units: Array, safehouses: Array, combat_context: Dictionary) -> Dictionary` — attacks an in-range target (unit or safehouse) or advances one step toward its current objective; returns a small event dict (`attacked_unit`, `attacked_safehouse`, `result`) for the caller's audio/FX hooks.
+- `EnemyAI.tick_enemy(enemy: Enemy, delta: float, grid, all_units: Array, safehouses: Array, combat_context: Dictionary) -> Dictionary` — attacks an in-range target (unit or safehouse) or advances one step toward its current objective; returns a small event dict (`attacked_unit`, `attacked_safehouse`, `result`) for the caller's audio/FX hooks. `all_units` entries are duck-typed, not strictly `Unit` — an exposed, last-stand `Commander` (RZ-142) is equally valid as long as it exposes `position`, `facing`, `id`, `is_alive()`, `apply_damage(int)`, and `to_combat_data(traits) -> Dictionary`.
 - Scaling: `WaveController` reads `data/waves.json` + `data/difficulty.json` to multiply enemy HP/damage/count per campaign depth.
 
 **Depends on:** `core/grid/`, `core/pathfinding/`, `data_runtime/EnemyData.gd`, `data_runtime/DifficultyData.gd`.

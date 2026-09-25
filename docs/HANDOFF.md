@@ -24,7 +24,7 @@ python tools/validate_data.py   # → OK
 - `pathfinding/AStarPathfinder.gd` — A*, elevation-aware
 - `sim/SimRng.gd` — seeded RNG with deterministic `derive()` for sub-streams
 - `combat/CombatResolver.gd`, `combat/CombatResult.gd` — data-driven RPS combat (ADR-0006)
-- `squad/Unit.gd`, `squad/Squad.gd`, `squad/Commander.gd` — squad movement/engagement, permadeath signal chain
+- `squad/Unit.gd`, `squad/Squad.gd`, `squad/Commander.gd` — squad movement/engagement, permadeath signal chain; once a squad's units are all dead, the exposed `Commander` becomes a duck-typed, targetable combat entity in their own right (RZ-142) — permadeath is now actually reachable through normal play, not just theoretically wired
 - `abilities/Ability.gd`, `abilities/AbilityRegistry.gd`, `abilities/BreachAbility.gd` — only Breach (Riot) is implemented; Focused Volley/Line Charge are not (RZ-048)
 - `enemy/Enemy.gd`, `enemy/EnemyAI.gd` — behavior-table-driven AI (swarm/tank_advance/ranged_kite/etc.)
 - `waves/EntryPoint.gd`, `waves/WaveController.gd` — deterministic pre-flattened spawn schedule
@@ -57,7 +57,7 @@ python tools/validate_data.py   # → OK
 - 8 audio events fire through `AudioManager.play_event()` (no real SFX yet, but the pipeline is proven end-to-end)
 
 **Tests** (`game/tests/`, run via `godot --headless --path game --script res://tests/run_tests.gd`):
-`test_pathfinding.gd`, `test_combat_rps.gd`, `test_economy.gd`, `test_procgen_determinism.gd`, `test_save_load_roundtrip.gd`, plus `test_reporter.gd`/`run_tests.gd` infrastructure.
+`test_pathfinding.gd`, `test_combat_rps.gd`, `test_economy.gd`, `test_procgen_determinism.gd`, `test_save_load_roundtrip.gd`, `test_commander_exposure.gd`, plus `test_reporter.gd`/`run_tests.gd` infrastructure.
 
 **Tooling:** `tools/validate_data.py` (schema + cross-reference validation), `tools/balance_report.py` (TTK matrices, gold curves — run it, output is sane).
 
@@ -68,7 +68,7 @@ python tools/validate_data.py   # → OK
 - **Marksman, Barricade classes' abilities** — data entries exist (`data/units.json`, `data/unit_abilities.json`), but `focused_ranged_burst`/`line_impale_charge` have no `Ability` subclass yet (RZ-048). `AbilityRegistry` and `DataLoader`'s boot-time check will `assert()`-fail loudly if you try to activate them, by design (ARCHITECTURE.md §6 invariant) — this is expected until RZ-048 lands, not a bug.
 - **Traits/relics beyond data** — all 10 traits and 8 relics are fully specified in `data/traits.json`/`data/relics.json` and `CombatResolver`/`Economy` already read trait modifiers generically, but relics have no runtime effect implementation yet (no `RelicEffect` system exists — tracked as RZ-109).
 - **Campaign layer** — `CampaignGenerator`, `CampaignState`, the Campaign Map scene, fog of war, split-the-party: none exist yet (RZ-080/081/082/084). The vertical slice plays exactly one hardcoded district. `RunState.campaign_state` is a placeholder Dictionary shaped like the save schema, ready for these to populate once they exist.
-- **Nothing ever damages a `Commander` in a live mission, so permadeath still can't actually happen through normal play.** RZ-141 wired the roster correctly — `MissionController` now hands the *same* `Commander` object to `Squad` that `RunState.commanders` holds, and `RunState.add_commander()` already connects `commander.died` to `RunState.on_commander_died()` — so if a commander ever died mid-mission, RunState would hear about it automatically, no extra glue code needed. But `Commander.apply_damage()`/`die()` are never called anywhere in `core/squad/`, `core/enemy/`, or the mission scripts today. When a squad's last unit dies, `Squad.commander_lost` fires correctly (GDD's "commander fights on alone" rule) but nothing then makes the exposed commander targetable or vulnerable — they just sit on the grid, immortal. **Tracked as RZ-142.** Until RZ-142 lands, `SaveManager.save()` also isn't called from anywhere in the mission flow yet — there's no natural "end of mission, offer to save" moment implemented (that's part of RZ-090, gated on RZ-074's Main Menu existing to have a "Continue" option to load into).
+- **`SaveManager.save()` isn't called from anywhere in the mission flow yet** — there's no natural "end of mission, offer to save" moment implemented (that's part of RZ-090, gated on RZ-074's Main Menu existing to have a "Continue" option to load into). (RZ-142 landed: permadeath can now actually happen through normal play — see below.)
 - **Main Menu, Armory/Upgrade, Roster, Game Over/Run Summary screens** — none exist (RZ-074, RZ-085, RZ-086, RZ-089). `Main.gd` calls `GameState.start_new_run()` directly with a random seed on every launch; there's no way to choose difficulty, view the roster, spend gold, or continue a save yet. (Mission Prep itself now exists — RZ-075, see above.)
 - **Danger indicator, minimap** — not implemented (RZ-068, RZ-127).
 - **Enemy types beyond the 3 wired into the default wave set** — Spitter, Brute Spitter, Thrower, Leaper, Colossus all have full `data/enemies.json` entries and `EnemyAI` behaviors already support their `behavior` values generically, but no wave_set currently spawns them except `transit_hub_5wave` (unused by the vertical slice's hardcoded `residential` district).
@@ -96,9 +96,9 @@ godot --headless --path game --script res://tests/run_tests.gd
 
 ## Next 3 Tasks (recommended order)
 
-1. **RZ-142 — Implement exposed-commander vulnerability (last-stand combat)**, so permadeath can actually happen through normal play. This is the real payoff of RZ-141's wiring — right now a dying commander is only theoretically possible, never practically reachable.
-2. **RZ-074 — Main Menu scene**, so `Main.gd` stops skipping straight into Mission Prep with a random seed every launch, and has somewhere to put "New Run" (create a `RunState`) vs. "Continue" (`SaveManager.load()`) vs. difficulty selection.
-3. Open the project in the actual Godot editor and playtest Main → Mission Prep → Mission → (repeat) by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right). In particular: verify deployment-zone tiles are visually distinct enough, that squad buttons showing real commander names read well, and that a squad's unit count visibly carrying over between missions is legible without a number (ADR-0005 — currently just fewer dots on the HUD button).
+1. **RZ-074 — Main Menu scene**, so `Main.gd` stops skipping straight into Mission Prep with a random seed every launch, and has somewhere to put "New Run" (create a `RunState`) vs. "Continue" (`SaveManager.load()`) vs. difficulty selection.
+2. **RZ-088 — Permadeath flow: commander death → squad removal → UI feedback.** All its deps (RZ-141, RZ-142, RZ-046) are now done — the engine-side mechanics (exposed commander dies, `RunState.on_commander_died()` fires) are real, but there's no UI moment that tells the player a commander was just lost mid-mission beyond the existing `commander_died` audio cue.
+3. Open the project in the actual Godot editor and playtest Main → Mission Prep → Mission → (repeat) by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right). In particular: verify deployment-zone tiles are visually distinct enough, that squad buttons showing real commander names read well, that a squad's unit count visibly carrying over between missions is legible without a number (ADR-0005), and that an exposed last-stand commander (RZ-142) reads clearly as "vulnerable" on screen — it's currently just a slightly larger amber square, same color as a normal commander marker.
 
 ## Known Simplifications (intentional, not bugs)
 
