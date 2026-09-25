@@ -102,7 +102,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-083 | Path-choice back-out flow (preview node, cancel before commit) | Should | S | RZ-082 | ui | Backlog |
 | RZ-084 | Split-the-party: deploy multiple squads to multiple nodes in one turn | Should | M | RZ-082,054 | engine | Backlog |
 | RZ-085 | Armory/Upgrade screen (spend gold on class levels/abilities/relics) — Class Tiers and Relics are real functional purchases; Abilities is informational only in v1 (shows name/cost, no purchase button) since ability access isn't gated by level/purchase anywhere yet — see RZ-144 | Must | L | RZ-051,067 | ui | Done |
-| RZ-086 | Roster/Commander screen (traits, equipped relic, alive/dead history) | Should | M | RZ-054 | ui | Backlog |
+| RZ-086 | Roster/Commander screen (traits, equipped relic, alive/dead history) — the wireframe's "died Mission N (Enemy)" cause-of-death annotation isn't shown, since nothing tracks that anywhere (`RunState.on_commander_died()` only erases roster metadata); fallen commanders list by name only | Should | M | RZ-054 | ui | Done |
 | RZ-087 | Hero rescue mission variant (trapped survivor tile + recruit-on-win) | Should | M | RZ-052,054 | engine | Backlog |
 | RZ-088 | Permadeath flow: commander death → squad removal → UI feedback | Must | M | RZ-141 ✅,RZ-142 ✅,046 ✅ | engine | Done |
 | RZ-089 | Run-over detection (total wipe / campaign complete) + summary screen — campaign-complete detection stays blocked on RZ-081 (no CampaignState exists), so only the total-wipe half is implemented; the summary screen always shows "RUN OVER", never the wireframe's alternate "CITY SECURED" | Must | M | RZ-054,081 | ui | Done |

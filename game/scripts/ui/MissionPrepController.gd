@@ -149,8 +149,18 @@ func _build_ui() -> void:
 	armory_button.pressed.connect(_on_armory_pressed)
 	bottom_bar.add_child(armory_button)
 
+	# RZ-086: Roster entry point, same reasoning as Armory above.
+	var roster_button := Button.new()
+	roster_button.text = "Roster"
+	roster_button.custom_minimum_size = Vector2(96, 48)
+	roster_button.pressed.connect(_on_roster_pressed)
+	bottom_bar.add_child(roster_button)
+
 func _on_armory_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/Armory.tscn")
+
+func _on_roster_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/Roster.tscn")
 
 func _on_squad_button_pressed(index: int) -> void:
 	_selected_squad_index = index
