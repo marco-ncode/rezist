@@ -2,7 +2,7 @@
 
 Live snapshot of "where things actually stand," updated at the end of every work session. If this file and `docs/ROADMAP.md` disagree, trust this one for current state and `docs/ROADMAP.md` for the plan. Read this after `docs/ONBOARDING.md` and before picking a task from `docs/TASKS.md`.
 
-**Last updated:** 2026-09-25, Session 1 (see `AGENTS.md`), continuing on the `dev` branch. Most recent landed work: RZ-142 (exposed-commander last-stand combat), RZ-074 (Main Menu scene).
+**Last updated:** 2026-09-25, Session 1 (see `AGENTS.md`), continuing on the `dev` branch. Most recent landed work: RZ-142 (exposed-commander last-stand combat), RZ-074 (Main Menu scene), RZ-088 (permadeath UI feedback).
 
 ---
 
@@ -61,7 +61,8 @@ python tools/validate_data.py   # → OK
 - Wave controller spawns Walker/Riot Zombie/Brute per `data/waves.json`'s `district_default_3wave` set
 - Safehouses take damage-state hits when a zombie reaches them unopposed; visuals update
 - Win (all waves cleared + battlefield clear) / lose (all squads wiped) both resolve to a simple HUD panel with gold payout
-- 8 audio events fire through `AudioManager.play_event()` (no real SFX yet, but the pipeline is proven end-to-end)
+- A commander's exposure and death (RZ-142) each get a dedicated moment (RZ-088): a fading HUD toast (`HUD.show_toast()`) plus a distinct audio cue (`commander_exposed`/`commander_died`) — "%s is exposed!" the tick their last unit dies, "%s has fallen." the tick they do. Backs up the squad button's own persistent "✕"/disabled state, which only tells the player if they happen to already be looking at the HUD bar.
+- 9 audio events fire through `AudioManager.play_event()` (no real SFX yet, but the pipeline is proven end-to-end)
 
 **Tests** (`game/tests/`, run via `godot --headless --path game --script res://tests/run_tests.gd`):
 `test_pathfinding.gd`, `test_combat_rps.gd`, `test_economy.gd`, `test_procgen_determinism.gd`, `test_save_load_roundtrip.gd`, `test_commander_exposure.gd`, plus `test_reporter.gd`/`run_tests.gd` infrastructure.
@@ -103,9 +104,9 @@ godot --headless --path game --script res://tests/run_tests.gd
 
 ## Next 3 Tasks (recommended order)
 
-1. **RZ-088 — Permadeath flow: commander death → squad removal → UI feedback.** All its deps (RZ-141, RZ-142, RZ-046) are now done — the engine-side mechanics (exposed commander dies, `RunState.on_commander_died()` fires) are real, but there's no UI moment that tells the player a commander was just lost mid-mission beyond the existing `commander_died` audio cue.
-2. **RZ-090 — Save/Load wired to Main Menu "Continue."** The Continue button itself is already fully wired (RZ-074) — what's missing is a call to `SaveManager.save()` somewhere sensible in the mission flow (e.g. after each mission resolves) so there's actually something for Continue to load.
-3. Open the project in the actual Godot editor and playtest Main → Main Menu → Mission Prep → Mission → (repeat) by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right). In particular: verify the new Main Menu's difficulty sub-panel reads clearly, deployment-zone tiles are visually distinct enough, squad buttons showing real commander names read well, a squad's unit count visibly carrying over between missions is legible without a number (ADR-0005), and that an exposed last-stand commander (RZ-142) reads clearly as "vulnerable" on screen — it's currently just a slightly larger amber square, same color as a normal commander marker.
+1. **RZ-090 — Save/Load wired to Main Menu "Continue."** The Continue button itself is already fully wired (RZ-074) — what's missing is a call to `SaveManager.save()` somewhere sensible in the mission flow (e.g. after each mission resolves) so there's actually something for Continue to load.
+2. **RZ-089 — Run-over detection (total wipe) + summary screen.** Today a total wipe just leaves `[Start]` disabled on Mission Prep with a text message ("this run is over") — there's no actual Game Over / Run Summary screen (UX_UI.md §8) with a way to start a new run from there. `RunState.is_run_over()` already detects the wipe correctly; nothing consumes it yet.
+3. Open the project in the actual Godot editor and playtest Main → Main Menu → Mission Prep → Mission → (repeat) by eye (CI proves the code *compiles and the unit tests pass*, not that the flow *feels* right). In particular: verify the new Main Menu's difficulty sub-panel reads clearly, deployment-zone tiles are visually distinct enough, squad buttons showing real commander names read well, a squad's unit count visibly carrying over between missions is legible without a number (ADR-0005), that an exposed last-stand commander (RZ-142) reads clearly as "vulnerable" on screen (currently just a slightly larger amber square, same color as a normal commander marker), and that the new RZ-088 permadeath toasts are readable/well-timed rather than flashing past too fast.
 
 ## Known Simplifications (intentional, not bugs)
 

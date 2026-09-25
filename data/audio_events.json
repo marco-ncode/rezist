@@ -7,6 +7,7 @@
     { "id": "unit_death_ally", "bus": "SFX_Combat", "description": "Short somber ally-death cue." },
     { "id": "unit_death_enemy", "bus": "SFX_Combat", "description": "Wet/blunt zombie-death cue." },
     { "id": "commander_died", "bus": "SFX_Combat", "description": "Unmistakable, non-repeating permadeath sting." },
+    { "id": "commander_exposed", "bus": "SFX_Combat", "description": "Sharp warning sting when a squad's last unit falls and the commander is left fighting alone." },
     { "id": "ability_activated_breach", "bus": "SFX_Combat", "description": "Loud, satisfying Breach cue." },
     { "id": "ability_on_cooldown_denied", "bus": "SFX_UI", "description": "Soft negative UI tone." },
     { "id": "safehouse_damaged", "bus": "SFX_Ambience", "description": "Glass break / alarm blip." },

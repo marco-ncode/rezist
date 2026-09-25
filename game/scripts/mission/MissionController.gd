@@ -332,20 +332,29 @@ func _refresh_hud() -> void:
 		and _squads[_selected_squad_index].ability_cooldown_remaining <= 0.0
 	_hud.update_ability_button(ability_ready, "Breach" if _ability_target_mode else "Ability")
 
+## RZ-088: the permadeath "moment" — commander death is the one loss the
+## player should never miss. A toast backs up the existing audio sting since
+## the squad button's own "✕" state (set on the next _refresh_hud(), via
+## update_squad_button's is_wiped branch) only shows up if the player happens
+## to be looking at the HUD bar right then.
 func _on_squad_wiped(squad: Squad, _index: int) -> void:
 	AudioManager.play_event("commander_died")
+	_hud.show_toast("%s has fallen." % squad.commander.display_name)
 	if _unit_views.has(squad.commander.id):
 		_unit_views[squad.commander.id].queue_free()
 		_unit_views.erase(squad.commander.id)
 
-## RZ-142: Bad North rule — the commander alone still fights on. They don't
-## flee or relocate; they just become visible and vulnerable at their last
-## position (Squad._prune_dead_units() already set commander.position).
+## RZ-142/RZ-088: Bad North rule — the commander alone still fights on. They
+## don't flee or relocate; they just become visible and vulnerable at their
+## last position (Squad._prune_dead_units() already set commander.position).
 ## Actual targeting/damage is handled generically by MissionController
-## including them in `all_units` — nothing extra needed here beyond the
-## visual.
+## including them in `all_units`. The toast+audio here are the actionable
+## warning: unlike the death toast below, the player can still react to this
+## one (send another squad to relieve them, focus the threat with Breach).
 func _on_commander_exposed(squad: Squad) -> void:
 	_create_commander_view(squad.commander)
+	AudioManager.play_event("commander_exposed")
+	_hud.show_toast("%s is exposed!" % squad.commander.display_name)
 
 func _check_mission_end() -> void:
 	var all_wiped := true
