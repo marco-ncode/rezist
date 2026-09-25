@@ -22,6 +22,8 @@ static func _make_populated_run_state() -> RunState:
 	run_state.campaign_state["progress_line_layer"] = 2
 	run_state.campaign_state["current_node"] = "n1"
 
+	run_state.add_safehouses_saved(7)
+
 	return run_state
 
 static func run(reporter: TestReporter) -> void:
@@ -29,6 +31,7 @@ static func run(reporter: TestReporter) -> void:
 	_test_roundtrip_preserves_fields(reporter)
 	_test_dead_commander_has_no_roster_meta_after_load(reporter)
 	_test_missing_slot_returns_null(reporter)
+	_test_v1_save_defaults_total_safehouses_saved_to_zero(reporter)
 
 static func _test_roundtrip_preserves_fields(reporter: TestReporter) -> void:
 	var original := _make_populated_run_state()
@@ -44,6 +47,7 @@ static func _test_roundtrip_preserves_fields(reporter: TestReporter) -> void:
 	reporter.expect_eq(loaded.difficulty_id, "hard", "difficulty round-trips")
 	reporter.expect_eq(loaded.gold, 42, "gold round-trips")
 	reporter.expect_eq(loaded.commanders.size(), 2, "both commanders round-trip")
+	reporter.expect_eq(loaded.total_safehouses_saved, 7, "total_safehouses_saved round-trips")
 
 	reporter.expect_eq(loaded.campaign_state["visited_nodes"], ["n0", "n1"], "campaign_state.visited_nodes round-trips")
 	reporter.expect_eq(loaded.campaign_state["lost_nodes"], ["n2"], "campaign_state.lost_nodes round-trips")
@@ -80,3 +84,16 @@ static func _test_missing_slot_returns_null(reporter: TestReporter) -> void:
 	SaveManager.delete_save(97) # ensure it doesn't exist
 	var loaded := SaveManager.load(97)
 	reporter.expect_true(loaded == null, "load() on a nonexistent slot returns null")
+
+## RZ-089 (SAVE_VERSION 2) added total_safehouses_saved — a v1 save
+## Dictionary has no such key. Exercises RunState.from_save_dict() directly
+## (rather than round-tripping through SaveManager) since a v1 save is
+## exactly a Dictionary missing this one field.
+static func _test_v1_save_defaults_total_safehouses_saved_to_zero(reporter: TestReporter) -> void:
+	var v1_dict := {
+		"save_version": 1, "seed": 1, "difficulty": "normal", "gold": 0,
+		"campaign_state": {"visited_nodes": [], "lost_nodes": [], "progress_line_layer": 0, "current_node": null},
+		"commanders": [],
+	}
+	var loaded := RunState.from_save_dict(v1_dict)
+	reporter.expect_eq(loaded.total_safehouses_saved, 0, "a v1 save (no total_safehouses_saved key) defaults to 0")

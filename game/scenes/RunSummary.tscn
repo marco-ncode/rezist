@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://run_summary_scene"]
+
+[ext_resource type="Script" path="res://scripts/ui/RunSummary.gd" id="1"]
+
+[node name="RunSummary" type="Control"]
+script = ExtResource("1")

@@ -8,6 +8,7 @@ extends CanvasLayer
 
 signal squad_button_pressed(index: int)
 signal ability_button_pressed()
+signal resolution_continue_pressed()
 
 var _squad_buttons: Array = []
 var _wave_label: Label
@@ -95,6 +96,11 @@ func show_toast(text: String, duration: float = 2.5) -> void:
 	_toast_tween.tween_property(_toast_label, "modulate:a", 0.0, 0.6)
 	_toast_tween.tween_callback(_toast_label.queue_free)
 
+## RZ-089: the Continue button here (matching UX_UI.md §5's wireframe) is
+## the only way to leave the mission scene after it ends — previously there
+## was none, so the player was stuck on this panel indefinitely regardless
+## of outcome. MissionController decides where continuing actually goes
+## (next Mission Prep, or the Run Summary screen on a total wipe).
 func show_resolution(won: bool, safehouses_saved: int, total_safehouses: int, gold_earned: int) -> void:
 	if _resolution_panel != null:
 		_resolution_panel.queue_free()
@@ -113,3 +119,9 @@ func show_resolution(won: bool, safehouses_saved: int, total_safehouses: int, go
 	var detail := Label.new()
 	detail.text = "Safehouses saved: %d/%d\nGold earned: +%d" % [safehouses_saved, total_safehouses, gold_earned]
 	vbox.add_child(detail)
+
+	var continue_button := Button.new()
+	continue_button.text = "Continue"
+	continue_button.custom_minimum_size = Vector2(120, 40)
+	continue_button.pressed.connect(func(): resolution_continue_pressed.emit())
+	vbox.add_child(continue_button)

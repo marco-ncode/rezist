@@ -45,6 +45,16 @@ func _ready() -> void:
 	_roster = GameState.run_state.alive_commanders()
 	_squad_count = _roster.size()
 
+	# RZ-089: reachable now that squads persist across missions (RZ-141) —
+	# every commander could have permadied, most commonly via loading a
+	# stale save whose run already ended (Continue doesn't currently offer
+	# to delete a finished run's save, so this is the fallback for that).
+	# Redirect straight to the Run Summary screen rather than building a
+	# Mission Prep UI with nothing to place.
+	if _squad_count == 0:
+		get_tree().change_scene_to_file("res://scenes/RunSummary.tscn")
+		return
+
 	var district_entry := DataLoader.districts.get_district(GameState.mission_district_id)
 	var mission_rng := GameState.make_rng("mission")
 	var gen_result := MapGenerator.generate(mission_rng.derive("map"), district_entry)
@@ -176,15 +186,8 @@ func _refresh_squad_marker(index: int) -> void:
 	_squad_markers[index] = marker
 
 func _update_ui() -> void:
-	# Reachable now that squads persist across missions (RZ-141): every
-	# commander could have permadied. There's no run-over screen yet
-	# (RZ-089) — block Start with a clear message rather than letting the
-	# player walk into an empty mission that auto-loses on the first tick.
-	if _squad_count == 0:
-		_start_button.disabled = true
-		_hint_label.text = "No commanders remain — this run is over. (Run-over screen not built yet, RZ-089.)"
-		return
-
+	# _squad_count == 0 redirects to RunSummary.tscn in _ready() before this
+	# is ever called (RZ-089) — no dead-roster case to handle here.
 	var all_placed := true
 	for i in _squad_count:
 		var placed: bool = _chosen_positions[i] != null

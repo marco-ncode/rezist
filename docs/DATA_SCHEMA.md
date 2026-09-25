@@ -166,7 +166,7 @@ Generation *parameters* (not a saved graph — the graph itself is generated at 
 
 ```json
 {
-  "save_version": 1,
+  "save_version": 2,
   "seed": 123456789,
   "difficulty": "normal",
   "gold": 47,
@@ -179,11 +179,12 @@ Generation *parameters* (not a saved graph — the graph itself is generated at 
   "commanders": [
     {"id": "cmdr_001", "name": "J. Alvarez", "unit_class": "riot", "level": 2,
      "trait_id": "ironskin", "relic_id": "mines", "alive": true, "unit_count": 5}
-  ]
+  ],
+  "total_safehouses_saved": 12
 }
 ```
 
-`save_version` gates migration logic in `SaveManager.gd` — bump it and add a migration step whenever the shape changes; never silently reinterpret an old save under a new shape.
+`save_version` gates migration logic in `SaveManager.gd` — bump it and add a migration step whenever the shape changes; never silently reinterpret an old save under a new shape. `total_safehouses_saved` (added in v2, RZ-089) is the run's cumulative safehouse count across every mission played, shown on the Run Summary screen (UX_UI.md §8); `RunState.from_save_dict()` defaults it to `0` when loading a v1 save that predates it.
 
 ---
 

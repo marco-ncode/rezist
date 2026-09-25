@@ -88,6 +88,7 @@ func _ready() -> void:
 	_hud.build(_squads.size())
 	_hud.squad_button_pressed.connect(_on_squad_button_pressed)
 	_hud.ability_button_pressed.connect(_on_ability_button_pressed)
+	_hud.resolution_continue_pressed.connect(_on_resolution_continue_pressed)
 	_refresh_hud()
 
 ## RZ-141: squads' commanders now persist across missions in RunState, so
@@ -390,13 +391,27 @@ func _end_mission(won: bool) -> void:
 	for squad in surviving_squads:
 		GameState.run_state.update_roster_meta(squad.commander.id, squad.unit_class, squad.level, squad.unit_count())
 
+	# RZ-089: fold this mission's safehouse count into the run's running
+	# total, shown on the Run Summary screen. Counted unconditionally (a
+	# losing mission can still have saved some safehouses before the squads
+	# wiped), same as the save below.
+	GameState.run_state.add_safehouses_saved(safehouses_saved)
+
 	# RZ-090: mission end is the run's only real "checkpoint" so far (no mid-
 	# mission saves, ADR-0007) — persist unconditionally, win or lose, so the
 	# Main Menu's Continue button (RZ-074, load-only) actually has an
-	# up-to-date save to load. A total wipe still gets saved as-is; there's no
-	# run-over screen yet (RZ-089) to decide whether that should instead
-	# delete the save, so this is the simplest correct behavior for now.
+	# up-to-date save to load.
 	SaveManager.save(GameState.run_state, SaveManager.DEFAULT_SLOT)
 
 	AudioManager.play_event("mission_won" if won else "mission_lost")
 	_hud.show_resolution(won, safehouses_saved, _safehouses.size(), gold_earned)
+
+## RZ-089: the resolution panel's Continue button. A total wipe (every
+## commander dead — RunState.is_run_over()) routes to the Run Summary
+## screen instead of straight back to Mission Prep, since there's no
+## roster left to prep a squad with.
+func _on_resolution_continue_pressed() -> void:
+	if GameState.run_state.is_run_over():
+		get_tree().change_scene_to_file("res://scenes/RunSummary.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/MissionPrep.tscn")

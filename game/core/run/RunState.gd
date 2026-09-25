@@ -16,7 +16,9 @@ extends RefCounted
 ## Bump whenever the save Dictionary's shape changes, and add a migration
 ## step in from_save_dict() for older versions — never silently
 ## reinterpret an old save under a new shape (TDD §8).
-const SAVE_VERSION := 1
+## v2 (RZ-089) added total_safehouses_saved; from_save_dict() defaults it to
+## 0 for a v1 save, which has no such key.
+const SAVE_VERSION := 2
 
 signal commander_died(commander: Commander)
 
@@ -25,6 +27,11 @@ var difficulty_id: String
 var gold: int
 var commanders: Array = [] # Array[Commander]
 var campaign_state: Dictionary
+## RZ-089: cumulative safehouses saved across every mission this run, shown
+## on the Run Summary screen (UX_UI.md §8). Per-mission counts are read off
+## Safehouse.is_saved() in MissionController and folded in here at mission
+## end — nothing else needs a per-mission breakdown.
+var total_safehouses_saved: int = 0
 var _roster_meta: Dictionary = {} # commander.id -> {"unit_class", "level", "unit_count"}
 
 func _init(p_seed: int, p_difficulty_id: String) -> void:
@@ -93,6 +100,9 @@ func spend_gold(amount: int) -> bool:
 func add_gold(amount: int) -> void:
 	gold += amount
 
+func add_safehouses_saved(count: int) -> void:
+	total_safehouses_saved += count
+
 ## Serializes to a Dictionary matching schemas/save_file.schema.json.
 func to_save_dict() -> Dictionary:
 	var commander_dicts: Array = []
@@ -115,6 +125,7 @@ func to_save_dict() -> Dictionary:
 		"gold": gold,
 		"campaign_state": campaign_state.duplicate(true),
 		"commanders": commander_dicts,
+		"total_safehouses_saved": total_safehouses_saved,
 	}
 
 ## Reconstructs a RunState from a save Dictionary. Dead commanders are
@@ -124,6 +135,9 @@ func to_save_dict() -> Dictionary:
 static func from_save_dict(data: Dictionary) -> RunState:
 	var run_state := RunState.new(data.get("seed", 0), data.get("difficulty", "normal"))
 	run_state.gold = data.get("gold", 0)
+	# v1 saves (save_version 1) predate total_safehouses_saved (v2, RZ-089) —
+	# default to 0 rather than failing to load an older save.
+	run_state.total_safehouses_saved = data.get("total_safehouses_saved", 0)
 
 	var campaign: Dictionary = data.get("campaign_state", {})
 	run_state.campaign_state = {
