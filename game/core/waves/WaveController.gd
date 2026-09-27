@@ -83,3 +83,42 @@ func elapsed_time() -> float:
 
 func total_spawn_count() -> int:
 	return _spawn_queue.size()
+
+## Entry points with at least one still-pending spawn within the wave
+## currently in progress — drives the HUD danger indicator (RZ-068,
+## UX_UI.md §4): "pings near active entry points during a wave; hidden
+## between waves." Empty before the first wave starts, empty again once
+## every entry point due this wave has already spawned (even if the next
+## wave hasn't started yet) — "between waves" falls out of that naturally,
+## no separate bookkeeping needed.
+func active_entry_points() -> Array:
+	if _wave_start_times.is_empty():
+		return []
+
+	var current_wave_start: float = -1.0
+	for start_time in _wave_start_times:
+		if start_time <= _elapsed_time:
+			current_wave_start = start_time
+		else:
+			break
+	if current_wave_start < 0.0:
+		return [] # elapsed_time hasn't reached the first wave's start yet
+
+	var next_wave_start := INF
+	for start_time in _wave_start_times:
+		if start_time > current_wave_start:
+			next_wave_start = start_time
+			break
+
+	var result: Array = []
+	var seen: Dictionary = {}
+	for i in range(_next_index, _spawn_queue.size()):
+		var entry: Dictionary = _spawn_queue[i]
+		var t: float = entry["time"]
+		if t < current_wave_start or t >= next_wave_start:
+			continue
+		var entry_point: EntryPoint = entry["entry_point"]
+		if not seen.has(entry_point.id):
+			seen[entry_point.id] = true
+			result.append(entry_point)
+	return result

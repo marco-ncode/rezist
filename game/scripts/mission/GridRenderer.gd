@@ -30,6 +30,8 @@ const SAFEHOUSE_COLORS := {
 var grid: TacticalGrid
 var safehouses: Array = []
 var _safehouse_nodes: Dictionary = {}
+var _entry_point_nodes: Dictionary = {} # entry_point.id -> ColorRect
+var _entry_point_tweens: Dictionary = {} # entry_point.id -> Tween, only while pulsing
 
 func render(p_grid: TacticalGrid, p_safehouses: Array, entry_points: Array) -> void:
 	grid = p_grid
@@ -37,6 +39,10 @@ func render(p_grid: TacticalGrid, p_safehouses: Array, entry_points: Array) -> v
 	for child in get_children():
 		child.queue_free()
 	_safehouse_nodes.clear()
+	for tween in _entry_point_tweens.values():
+		tween.kill()
+	_entry_point_nodes.clear()
+	_entry_point_tweens.clear()
 
 	for pos in grid.all_positions():
 		var tile := grid.get_tile(pos)
@@ -60,11 +66,35 @@ func render(p_grid: TacticalGrid, p_safehouses: Array, entry_points: Array) -> v
 		marker.position = tile_to_screen(entry_point.position, grid.elevation_at(entry_point.position)) + Vector2(TILE_SIZE * 0.3, TILE_SIZE * 0.3)
 		marker.color = Color("C23B3B")
 		add_child(marker)
+		_entry_point_nodes[entry_point.id] = marker
 
 func refresh_safehouses() -> void:
 	for safehouse in safehouses:
 		if _safehouse_nodes.has(safehouse.id):
 			_safehouse_nodes[safehouse.id].color = SAFEHOUSE_COLORS[safehouse.state]
+
+## RZ-068: pulses (or stops pulsing) an entry point's existing marker to
+## signal it's part of the wave currently spawning (UX_UI.md §4's "danger
+## indicator"). Reuses the marker already drawn above instead of adding an
+## overlapping second shape at the same tile — every entry point already
+## renders in this same red, permanently, so the only new visual state is
+## the pulse itself.
+func set_entry_point_active(entry_point_id: String, active: bool) -> void:
+	if not _entry_point_nodes.has(entry_point_id):
+		return
+	var marker: ColorRect = _entry_point_nodes[entry_point_id]
+	if active:
+		if _entry_point_tweens.has(entry_point_id):
+			return # already pulsing
+		var tween := marker.create_tween().set_loops()
+		tween.tween_property(marker, "modulate:a", 0.35, 0.5)
+		tween.tween_property(marker, "modulate:a", 1.0, 0.5)
+		_entry_point_tweens[entry_point_id] = tween
+	else:
+		if _entry_point_tweens.has(entry_point_id):
+			_entry_point_tweens[entry_point_id].kill()
+			_entry_point_tweens.erase(entry_point_id)
+		marker.modulate.a = 1.0
 
 static func tile_to_screen(pos: Vector2i, elevation: int) -> Vector2:
 	return Vector2(pos.x * TILE_SIZE, pos.y * TILE_SIZE - elevation * ELEVATION_OFFSET)

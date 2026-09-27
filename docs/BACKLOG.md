@@ -82,7 +82,7 @@ Legend — **Priority:** Must / Should / Could / Won't(-yet). **Size:** S/M/L. *
 | RZ-065 | Render enemies with per-type placeholder silhouettes | Must | M | RZ-050,061 | ui | Done |
 | RZ-066 | Safehouse rendering + damage-state (intact/damaged/burning/collapsed) | Must | M | RZ-061 | ui | Done |
 | RZ-067 | HUD: squad selector bar, ability button + cooldown, wave indicator | Must | M | RZ-062 | ui | Done |
-| RZ-068 | Danger indicator (arrows/pings toward active entry points) | Should | S | RZ-067 | ui | Backlog |
+| RZ-068 | Danger indicator (arrows/pings toward active entry points) — implemented as a pulse on the entry point's own marker rather than an off-screen arrow, since the fixed camera always shows the whole grid and entry points are always on-screen (border tiles); no off-screen case ever exists for an arrow to solve | Should | S | RZ-067 | ui | Done |
 | RZ-069 | Mission win/lose detection + resolution screen | Must | M | RZ-050,066 | engine | Done |
 | RZ-070 | Ability activation input (Breach) wired to HUD button | Must | S | RZ-047,067 | ui | Done |
 | RZ-071 | autoload/AudioManager.gd + event→sound data table | Must | M | RZ-060 | audio | Done |

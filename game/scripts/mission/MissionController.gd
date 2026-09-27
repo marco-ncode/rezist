@@ -203,6 +203,7 @@ func _physics_process(delta: float) -> void:
 		_create_enemy_view(enemy)
 	if newly_spawned.size() > 0:
 		AudioManager.play_event("wave_incoming")
+	_update_danger_indicators()
 
 	var all_units: Array = []
 	var unit_traits_by_id: Dictionary = {}
@@ -244,6 +245,22 @@ func _physics_process(delta: float) -> void:
 	_update_enemy_view_positions()
 	_refresh_hud()
 	_check_mission_end()
+
+## RZ-068: danger indicator (UX_UI.md §4). The wireframe describes this as
+## a "screen edge" pointer, envisioning a scrolling/zoomed camera an
+## off-screen entry point would need an arrow to find; this game's camera
+## is fixed and always shows the whole grid (every district's
+## grid_width/height * TILE_SIZE comfortably fits the 1280x720 viewport —
+## see project.godot), and entry points are always placed on the grid's
+## border tiles (MapGenerator), so they're never actually off-screen.
+## Pulsing the entry point's own marker in place is the honest adaptation
+## of the same intent — see GridRenderer.set_entry_point_active().
+func _update_danger_indicators() -> void:
+	var active_ids: Dictionary = {}
+	for entry_point in _wave_controller.active_entry_points():
+		active_ids[entry_point.id] = true
+	for entry_point in _entry_points:
+		_grid_renderer.set_entry_point_active(entry_point.id, active_ids.has(entry_point.id))
 
 func _prune_dead_enemy_views() -> void:
 	var still_alive: Array = []
