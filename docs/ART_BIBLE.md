@@ -79,6 +79,14 @@ The engine renders **flat 2D sprites**, not 3D models — `TECHNICAL_DESIGN_DOCU
 - **Top-down / slight three-quarter-front view** (think *Into the Breach* or *Bad North*'s actual read) — not a side profile, not a classic isometric diamond projection.
 - Must read correctly both stationary and mid-move — v1 needs no walk-cycle frames (see "What's NOT needed" below), so one static pose per sprite must carry the silhouette on its own.
 
+### Production pipeline: 2D-direct vs. 3D-source
+
+Either path is fine — the engine only ever consumes a flat `.png`, it has no idea how it was made:
+- **Draw directly in 2D** (Aseprite, Illustrator/Affinity, Photoshop) at the perspective above.
+- **Model in 3D (Blender or similar), then render a still from a fixed camera** and export that as the `.png`. This is the more efficient route once there are many classes/levels/states to cover, since one rig gets reused for every render instead of redrawing each variant by hand. Camera setup: **orthographic** (not perspective — matches the flat, non-vanishing-point read the rest of the game uses), elevated and tilted down roughly 30–45° off straight-down (i.e. a high three-quarter angle, not a bird's-eye top-down and not a side-on front view), aimed at the character's center of mass, identical for every character so the whole roster reads consistently. Treat this as a starting point to eyeball against Bad North's own screenshots (the closest visual reference already cited in §1), not an exact locked angle.
+
+A render straight from the front (character facing the camera, no downward tilt) is a **different asset category** — a portrait/icon or marketing image, not a battlefield sprite — and doesn't fit either pipeline's target perspective above. It can still be worth keeping around for that other purpose, just don't treat it as game-ready for the mission scene without re-rendering (3D source) or redrawing (2D) from the actual angle.
+
 ### File specs
 
 | Parameter | Value |
