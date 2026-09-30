@@ -266,4 +266,4 @@ Explicitly deferred — tracked in `docs/BACKLOG.md`, not forgotten:
 Tracked as living questions; resolve via ADR when decided.
 - Exact economy curve tuning (placeholder values in `data/economy.json`, needs playtesting — see `docs/PLAYTEST_CHECKLIST.md`).
 - Whether a light meta-progression layer (e.g., a persistent "safehouse network" bonus) is added post-v1 without breaking pillar 2.
-- Boss (Colossus) mission frequency and whether it needs a dedicated mission type vs. a wave modifier.
+- ~~Boss (Colossus) mission frequency and whether it needs a dedicated mission type vs. a wave modifier.~~ **Resolved, ADR-0011**: a wave modifier, not a dedicated mission type, for v1.

@@ -49,7 +49,7 @@ Milestones, in order. Each has explicit completion criteria — a milestone is "
 **Goal:** the full roster from the GDD exists, not just the M1 subset.
 
 - [ ] All 4 allied classes (Recruit/Riot/Marksman/Barricade), all 3 levels each, all 3 abilities
-- [ ] All 8 enemy types from GDD §10 implemented
+- [x] All 8 enemy types from GDD §10 implemented (RZ-103/104/105/106/107 made the last 5 reachable in the vertical slice's `district_default_3wave`; see `docs/HANDOFF.md`)
 - [ ] All 10 traits implemented and stacking-tested
 - [ ] All 8 field-gear relics implemented
 - [ ] District variety: ≥4 `data/districts.json` types with distinct generation params

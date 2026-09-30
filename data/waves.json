@@ -29,7 +29,8 @@
             { "enemy_id": "walker", "count": 4, "interval": 0.7, "entry_point": "any" },
             { "enemy_id": "riot_zombie", "count": 2, "interval": 1.8, "entry_point": "any" },
             { "enemy_id": "brute", "count": 1, "interval": 0.0, "entry_point": "any" },
-            { "enemy_id": "brute_spitter", "count": 1, "interval": 0.0, "entry_point": "any" }
+            { "enemy_id": "brute_spitter", "count": 1, "interval": 0.0, "entry_point": "any" },
+            { "enemy_id": "colossus", "count": 1, "interval": 0.0, "entry_point": "any" }
           ]
         }
       ]
