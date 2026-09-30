@@ -30,7 +30,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "name", "unit_class", "level", "trait_id", "relic_id", "alive", "unit_count"],
+        "required": ["id", "name", "unit_class", "level", "trait_id", "relic_id", "alive", "unit_count", "relic_charge_used"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string", "minLength": 1 },
@@ -40,7 +40,8 @@
           "trait_id": { "type": ["string", "null"] },
           "relic_id": { "type": ["string", "null"] },
           "alive": { "type": "boolean" },
-          "unit_count": { "type": "integer", "minimum": 0 }
+          "unit_count": { "type": "integer", "minimum": 0 },
+          "relic_charge_used": { "type": "boolean" }
         }
       }
     }

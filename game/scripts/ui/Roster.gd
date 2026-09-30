@@ -128,7 +128,13 @@ func _build_commander_card(commander: Commander) -> PanelContainer:
 	relic_label.add_theme_color_override("font_color", Color.WHITE)
 	vbox.add_child(relic_label)
 
-	var max_size: int = DataLoader.units.squad_base_max_size + int(DataLoader.traits.get_modifier(commander.trait_id, "squad_max_size_add", 0))
+	var relic_size_bonus := 0
+	if commander.relic_id != "" and DataLoader.relics.has_relic(commander.relic_id):
+		var relic_effect := DataLoader.relics.get_effect(commander.relic_id)
+		if relic_effect.get("effect", "") == "squad_max_size_add":
+			relic_size_bonus = int(relic_effect.get("amount", 0))
+	var max_size: int = DataLoader.units.squad_base_max_size \
+		+ int(DataLoader.traits.get_modifier(commander.trait_id, "squad_max_size_add", 0)) + relic_size_bonus
 	var filled: int = clampi(unit_count, 0, max_size)
 	var squad_label := Label.new()
 	squad_label.text = "Squad size: %s%s" % ["●".repeat(filled), "○".repeat(max_size - filled)]

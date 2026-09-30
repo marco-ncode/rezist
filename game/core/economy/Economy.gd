@@ -12,15 +12,27 @@ func _init(economy_data: EconomyData) -> void:
 
 ## `safehouses_saved`: int count. `surviving_squads`: Array[Squad].
 ## `difficulty_tier`: Dictionary (from DifficultyData.get_tier()).
-func mission_payout(safehouses_saved: int, surviving_squads: Array, difficulty_tier: Dictionary) -> int:
+## `relic_data` is optional (RZ-109's Emergency Fund) — omitting it (every
+## existing caller before RZ-109) just skips relic bonuses, same zero-effect
+## default as omitting `trait_data` elsewhere in this codebase.
+func mission_payout(safehouses_saved: int, surviving_squads: Array, difficulty_tier: Dictionary, relic_data: RelicData = null) -> int:
 	var total := safehouses_saved * _economy_data.gold_per_safehouse
 	for squad in surviving_squads:
 		total += squad_performance_bonus(squad)
+		total += _relic_bonus_gold(squad.commander.relic_id, relic_data)
 	var gold_mult: float = difficulty_tier.get("gold_mult", 1.0)
 	return int(round(total * gold_mult))
 
 func squad_performance_bonus(squad: Squad) -> int:
 	return _economy_data.squad_survival_base_gold + squad.unit_count() * _economy_data.gold_per_surviving_unit
+
+## Emergency Fund (RZ-109): a squad whose commander's equipped relic
+## declares `bonus_gold` (read generically, never special-cased by id,
+## ARCHITECTURE.md §11) adds that much extra payout per mission it survives.
+static func _relic_bonus_gold(relic_id: String, relic_data: RelicData) -> int:
+	if relic_data == null or relic_id == "" or not relic_data.has_relic(relic_id):
+		return 0
+	return int(relic_data.get_effect(relic_id).get("bonus_gold", 0))
 
 func upgrade_cost(from_level: int, to_level: int) -> int:
 	if from_level == 1 and to_level == 2:

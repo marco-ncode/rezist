@@ -22,6 +22,11 @@ var relic_id: String = ""
 var hp: int
 var max_hp: int
 var alive: bool = true
+## RZ-109 (Reanimation Kit): true once the currently-equipped relic's
+## one-time charge has been spent (see apply_damage()). Reset to false by
+## equip_relic() — paying gold to (re-)equip a relic in the Armory refreshes
+## its charge, same as buying it fresh.
+var _relic_charge_used: bool = false
 ## RZ-108 (Mountain): melee damage this commander deals when exposed and
 ## fighting last-stand (see to_combat_data()). Stays 0 for every commander
 ## without the Mountain trait, matching GDD's default "commander fights on
@@ -67,12 +72,47 @@ func heal_to_full() -> void:
 	if alive:
 		hp = max_hp
 
-func apply_damage(amount: int) -> void:
+## Equips `p_relic_id` and resets its one-time-use charge (Reanimation Kit).
+## The only mutator of `relic_id` outside `_init()`/save-load reconstruction
+## — Armory.gd calls this instead of assigning `relic_id` directly so a
+## charge-bearing relic (bought again, possibly after being spent) always
+## comes back fresh.
+func equip_relic(p_relic_id: String) -> void:
+	relic_id = p_relic_id
+	_relic_charge_used = false
+
+## Load-path counterpart to equip_relic() — restores a persisted charge-used
+## flag without resetting it, unlike equip_relic() (used only by
+## RunState.from_save_dict(), matching restore_state()'s own load-only role).
+func restore_relic_charge_used(p_used: bool) -> void:
+	_relic_charge_used = p_used
+
+func relic_charge_used() -> bool:
+	return _relic_charge_used
+
+## `relic_data` is optional (core/ classes may accept other core/data_runtime
+## objects passed in by a caller, ADR-0002) — when given, a fatal hit is
+## intercepted if the equipped relic declares `effect: "revive_commander"`
+## (Reanimation Kit, RZ-109) and its charge hasn't been used yet: the charge
+## is consumed and the commander survives at half `max_hp` instead of dying.
+## Read generically off the relic's declared effect, not special-cased by id
+## (ARCHITECTURE.md §11 invariant) — any future relic declaring the same
+## effect string gets the same behavior for free.
+func apply_damage(amount: int, relic_data: RelicData = null) -> void:
 	if not alive:
 		return
 	hp = maxi(0, hp - amount)
 	if hp == 0:
+		if _can_reanimate(relic_data):
+			_relic_charge_used = true
+			hp = maxi(1, int(max_hp * 0.5))
+			return
 		die()
+
+func _can_reanimate(relic_data: RelicData) -> bool:
+	if relic_data == null or _relic_charge_used or relic_id == "" or not relic_data.has_relic(relic_id):
+		return false
+	return relic_data.get_effect(relic_id).get("effect", "") == "revive_commander"
 
 func die() -> void:
 	if not alive:

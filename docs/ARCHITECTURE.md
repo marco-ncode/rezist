@@ -91,6 +91,8 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 - `Commander.die() -> void` → triggers permadeath (emits `died`, consumed by both `Squad._on_commander_died` — mission-local `wiped` signal — and `core/run/RunState.on_commander_died` when the commander came from a `RunState` roster).
 - `Commander.heal_to_full() -> void` (RZ-108/RZ-146) — resets `hp` to `max_hp`. Called once per roster commander from `MissionController._spawn_squads()` at mission start, per ADR-0007 ("commander HP is never persisted across missions"). Previously nothing called this at all, silently violating that contract.
 - `Commander.to_combat_data(traits: Array) -> Dictionary` — duck-typed combat interface (RZ-142), same dictionary shape `Unit.to_combat_data()` produces. Lets `EnemyAI` target an exposed commander with zero special-casing (ADR-0006). `damage` is `Commander.melee_damage` (0 unless the Mountain trait's `mountain_damage` modifier set it in `_init()`, RZ-108) — per GDD's "commander fights on alone" rule they don't fight back by default.
+- `Commander.apply_damage(amount: int, relic_data: RelicData = null) -> void` (RZ-109) — intercepts a fatal hit once per equip if the equipped relic declares `effect: "revive_commander"` (Reanimation Kit), reviving at half `max_hp` instead of calling `die()`. `Unit.apply_damage()` gained the same (ignored) optional param purely for signature parity at `EnemyAI.tick_enemy()`'s one shared duck-typed call site, same constraint as `to_combat_data()` above.
+- `Commander.equip_relic(relic_id: String) -> void` / `relic_charge_used() -> bool` (RZ-109) — the only mutator of `relic_id` outside construction/save-load; resets the one-time charge, so (re-)buying a relic in the Armory always comes back fresh. `restore_relic_charge_used()` is the load-path counterpart, matching `restore_state()`'s role.
 
 **Depends on:** `core/grid/`, `core/pathfinding/`, `core/combat/CombatResolver.gd`, `data_runtime/UnitData.gd`, `data_runtime/TraitData.gd`.
 
@@ -151,7 +153,7 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Responsibility:** gold accounting: mission payout, upgrade/ability/relic costs, scaling by difficulty.
 
 **Public API:**
-- `Economy.mission_payout(safehouses_saved: int, surviving_squads: Array, difficulty_tier: Dictionary) -> int`
+- `Economy.mission_payout(safehouses_saved: int, surviving_squads: Array, difficulty_tier: Dictionary, relic_data: RelicData = null) -> int` — `relic_data` (RZ-109) adds Emergency Fund's `bonus_gold` per surviving squad whose commander has it equipped, read generically off the relic's declared effect (ARCHITECTURE.md §11), omittable (every pre-RZ-109 caller) with no effect.
 - `Economy.upgrade_cost(from_level: int, to_level: int) -> int`
 - `Economy.ability_cost(trait_id: String) -> int`
 - `Economy.relic_cost(relic_data: RelicData, relic_id: String, trait_id: String) -> int`
@@ -215,6 +217,14 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Depends on:** `data/traits.json`, `data/relics.json`.
 
 **Invariants:** modifiers are additive/multiplicative per documented stacking rule (`docs/BALANCE.md` §4) — consumers must not special-case a trait/relic id, only read its declared modifier keys.
+
+**Relic consumers (RZ-109):** unlike traits (all 10 wired, RZ-108), only 4 of the 8 relics have a runtime effect — the 4 that are passive modifiers on an existing system, discoverable the same way traits are (read a declared key off `RelicData.get_effect(relic_id)`, dispatched by its `effect` string like `EnemyAI`/`Ability` dispatch by `behavior`/`effect`, ADR-0006 — not a violation of "never special-case a trait/relic id" above, which is about the *id*, not the declared *effect* value):
+- `Squad.max_size(trait_data, relic_data)` — Tactical Radio (`effect: "squad_max_size_add"`, reads `amount`).
+- `Economy.mission_payout(..., relic_data)` — Emergency Fund (`effect: "bonus_gold_per_mission"`, reads `bonus_gold`).
+- `Squad._apply_relic_melee_splash()` (called from `tick()` after every unblocked melee hit) — Sledgehammer (`effect: "area_damage"`, but distinguished from IED — same effect value — by declaring a `damage_multiplier` key IED doesn't have).
+- `Commander.apply_damage(amount, relic_data)` — Reanimation Kit (`effect: "revive_commander"`), a one-time charge tracked on `Commander` itself (`equip_relic()`/`restore_relic_charge_used()`/`relic_charge_used()`), persisted in the save (`SAVE_VERSION` 4).
+
+The remaining 4 (IED, Mines/Traps, Flare/Air Horn, Fast Response Vehicle) are each a player-triggered, in-mission action with no existing UI to trigger from — `docs/UX_UI.md` §4's mission HUD wireframe specifies exactly one button (the class ability). Deliberately deferred, each its own backlog item: RZ-148 (IED), RZ-149 (Mines), RZ-150 (Flare), RZ-151 (FRV).
 
 ---
 

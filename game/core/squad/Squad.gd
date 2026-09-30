@@ -50,11 +50,19 @@ func _init(p_id: String, p_commander: Commander, p_unit_class: String, p_level: 
 	# targetable at until the first tick's exposure transition runs.
 	commander.position = spawn_positions[0] if not spawn_positions.is_empty() else deployment_center
 
-func max_size(trait_data: TraitData = null, relic_bonus: int = 0) -> int:
+## RZ-109 (Tactical Radio): `relic_data` replaces the previous raw
+## `relic_bonus: int` parameter (never actually called with a non-zero value
+## anywhere) with a generic read off the equipped relic's declared effect,
+## same pattern as `trait_data`/Popular just above.
+func max_size(trait_data: TraitData = null, relic_data: RelicData = null) -> int:
 	var bonus := 0
 	if trait_data != null:
 		bonus += int(trait_data.get_modifier(commander.trait_id, "squad_max_size_add", 0))
-	return base_max_size + bonus + relic_bonus
+	if relic_data != null and commander.relic_id != "" and relic_data.has_relic(commander.relic_id):
+		var effect := relic_data.get_effect(commander.relic_id)
+		if effect.get("effect", "") == "squad_max_size_add":
+			bonus += int(effect.get("amount", 0))
+	return base_max_size + bonus
 
 func unit_count() -> int:
 	return units.size()
@@ -97,6 +105,7 @@ func tick(delta: float, grid: TacticalGrid, combat_context: Dictionary) -> void:
 	var enemies: Array = combat_context.get("enemies", [])
 	var rng: SimRng = combat_context.get("rng")
 	var trait_data: TraitData = combat_context.get("trait_data")
+	var relic_data: RelicData = combat_context.get("relic_data")
 	var traits := commander.traits()
 	var speed_mult := _aggregate_move_speed_mult(traits, trait_data)
 
@@ -119,11 +128,35 @@ func tick(delta: float, grid: TacticalGrid, combat_context: Dictionary) -> void:
 				)
 				if not result.blocked:
 					target.apply_damage(result.damage_dealt)
+					if unit.attack_type == "melee":
+						_apply_relic_melee_splash(commander.relic_id, relic_data, target.get_position(), result.damage_dealt, enemies)
 				unit.attack_cooldown_remaining = ATTACK_INTERVAL
 		else:
 			_advance_unit(unit, delta, grid, speed_mult)
 
 	_prune_dead_units()
+
+## Sledgehammer (RZ-109): a squad whose commander's equipped relic declares
+## a `damage_multiplier` (checked generically, never by id, ARCHITECTURE.md
+## §11) turns every melee hit into a burst: every other living enemy within
+## `radius` tiles of the original target also takes `hit_damage * mult`
+## damage. IED shares relics.json's `effect: "area_damage"` value but is a
+## distinct, player-thrown item (declares `fuse_seconds`, not
+## `damage_multiplier`) -- not implemented here, tracked separately (RZ-148).
+static func _apply_relic_melee_splash(relic_id: String, relic_data: RelicData, origin: Vector2i, hit_damage: int, enemies: Array) -> void:
+	if relic_data == null or relic_id == "" or not relic_data.has_relic(relic_id):
+		return
+	var effect: Dictionary = relic_data.get_effect(relic_id)
+	if not effect.has("damage_multiplier"):
+		return
+	var radius: int = effect.get("radius", 0)
+	var splash_damage := maxi(1, roundi(hit_damage * float(effect.get("damage_multiplier", 1.0))))
+	for enemy in enemies:
+		if not enemy.is_alive() or enemy.get_position() == origin:
+			continue
+		var dist: int = maxi(absi(enemy.get_position().x - origin.x), absi(enemy.get_position().y - origin.y))
+		if dist <= radius:
+			enemy.apply_damage(splash_damage)
 
 ## Fleet of Foot: multiplies the squad's movement speed. Read generically
 ## (ARCHITECTURE.md §11) so a new movement-speed trait never needs a new

@@ -224,7 +224,7 @@ func _physics_process(delta: float) -> void:
 
 	var combat_context := {
 		"enemies": _active_enemies, "rng": _tick_rng, "trait_data": trait_data,
-		"unit_traits_by_id": unit_traits_by_id,
+		"unit_traits_by_id": unit_traits_by_id, "relic_data": DataLoader.relics,
 	}
 	for squad in _squads:
 		if squad.is_wiped():
@@ -451,7 +451,7 @@ func _end_mission(won: bool) -> void:
 	var difficulty_tier := GameState.current_difficulty_tier()
 	var gold_earned := 0
 	if won:
-		gold_earned = _economy.mission_payout(safehouses_saved, surviving_squads, difficulty_tier)
+		gold_earned = _economy.mission_payout(safehouses_saved, surviving_squads, difficulty_tier, DataLoader.relics)
 		GameState.run_state.add_gold(gold_earned)
 
 	# RZ-141: write each surviving squad's post-mission headcount back to the

@@ -20,7 +20,10 @@ extends RefCounted
 ## 0 for a v1 save, which has no such key.
 ## v3 (RZ-144) added ability_unlocks; from_save_dict() defaults it to an
 ## empty Dictionary for a v1/v2 save, which has no such key.
-const SAVE_VERSION := 3
+## v4 (RZ-109) added each commander's relic_charge_used (Reanimation Kit's
+## one-time-use flag); from_save_dict() defaults it to false for a v1/v2/v3
+## save, which has no such key.
+const SAVE_VERSION := 4
 
 signal commander_died(commander: Commander)
 
@@ -135,6 +138,7 @@ func to_save_dict() -> Dictionary:
 			"relic_id": commander.relic_id if commander.relic_id != "" else null,
 			"alive": commander.alive,
 			"unit_count": meta.get("unit_count", 0),
+			"relic_charge_used": commander.relic_charge_used(),
 		})
 	return {
 		"save_version": SAVE_VERSION,
@@ -180,6 +184,10 @@ static func from_save_dict(data: Dictionary) -> RunState:
 			relic_id,
 		)
 		commander.restore_state(commander_dict.get("alive", true))
+		# v1/v2/v3 saves (SAVE_VERSION < 4) predate relic_charge_used (RZ-109)
+		# — default to false (unused charge) rather than failing to load an
+		# older save.
+		commander.restore_relic_charge_used(commander_dict.get("relic_charge_used", false))
 		run_state.commanders.append(commander)
 
 		if commander.alive:

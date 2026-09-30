@@ -37,7 +37,11 @@ func _init(p_id: String, level_stats: Dictionary, class_data: Dictionary, p_posi
 func is_alive() -> bool:
 	return hp > 0
 
-func apply_damage(amount: int) -> void:
+## `relic_data` is accepted and ignored — pure signature parity with
+## Commander.apply_damage() (RZ-109's Reanimation Kit), which needs it, so
+## EnemyAI.tick_enemy()'s single duck-typed call site (a Unit or an exposed
+## Commander, RZ-142) can pass it unconditionally without knowing which.
+func apply_damage(amount: int, _relic_data: RelicData = null) -> void:
 	hp = maxi(0, hp - amount)
 
 ## Dictionary shape consumed by CombatResolver as `attacker`/`defender`.

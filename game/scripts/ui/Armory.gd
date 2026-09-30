@@ -299,7 +299,10 @@ func _build_relics_panel(commander: Commander) -> void:
 func _on_relic_pressed(commander: Commander, relic_id: String, cost: int) -> void:
 	if not GameState.run_state.spend_gold(cost):
 		return
-	commander.relic_id = relic_id
+	# RZ-109: equip_relic() (not a direct relic_id assignment) so a
+	# charge-bearing relic (Reanimation Kit) always comes back with a fresh,
+	# unused charge when (re-)bought.
+	commander.equip_relic(relic_id)
 	AudioManager.play_event("upgrade_purchased")
 	_refresh_gold_label()
 	_refresh_content()

@@ -12,6 +12,12 @@ static func _make_populated_run_state() -> RunState:
 
 	var alive_commander := Commander.new("cmdr_a", "Alpha", Commander.DEFAULT_MAX_HP, "ironskin", "mines")
 	run_state.add_commander(alive_commander, "riot", 2, 5)
+	# RZ-109: exercises relic_charge_used round-tripping as true (not just the
+	# false default) without touching relic_id — restore_relic_charge_used()
+	# sets the flag directly, unlike equip_relic() which would also reset
+	# relic_id away from "mines" (which the rest of this file's assertions
+	# expect).
+	alive_commander.restore_relic_charge_used(true)
 
 	var dead_commander := Commander.new("cmdr_b", "Beta", Commander.DEFAULT_MAX_HP, "", "")
 	run_state.add_commander(dead_commander, "marksman", 1, 3)
@@ -34,6 +40,7 @@ static func run(reporter: TestReporter) -> void:
 	_test_missing_slot_returns_null(reporter)
 	_test_v1_save_defaults_total_safehouses_saved_to_zero(reporter)
 	_test_v2_save_defaults_ability_unlocks_to_empty(reporter)
+	_test_v3_save_defaults_relic_charge_used_to_false(reporter)
 	_test_unlock_ability_persists_flag(reporter)
 
 static func _test_roundtrip_preserves_fields(reporter: TestReporter) -> void:
@@ -65,6 +72,7 @@ static func _test_roundtrip_preserves_fields(reporter: TestReporter) -> void:
 	reporter.expect_eq(alive.trait_id, "ironskin", "trait_id round-trips")
 	reporter.expect_eq(alive.relic_id, "mines", "relic_id round-trips")
 	reporter.expect_true(alive.alive, "alive commander stays alive after round-trip")
+	reporter.expect_true(alive.relic_charge_used(), "relic_charge_used round-trips (true, not just the false default)")
 
 	var alive_meta := loaded.get_roster_meta("cmdr_a")
 	reporter.expect_eq(alive_meta.get("unit_class"), "riot", "unit_class round-trips")
@@ -113,6 +121,22 @@ static func _test_v2_save_defaults_ability_unlocks_to_empty(reporter: TestReport
 	}
 	var loaded := RunState.from_save_dict(v2_dict)
 	reporter.expect_false(loaded.has_ability_unlocked("anyone"), "a v2 save (no ability_unlocks key) defaults to nothing unlocked")
+
+## RZ-109 (SAVE_VERSION 4) added each commander's relic_charge_used — a v3
+## save's commander dicts have no such key. Same direct from_save_dict()
+## approach as the v1/v2 tests above.
+static func _test_v3_save_defaults_relic_charge_used_to_false(reporter: TestReporter) -> void:
+	var v3_dict := {
+		"save_version": 3, "seed": 1, "difficulty": "normal", "gold": 0,
+		"campaign_state": {"visited_nodes": [], "lost_nodes": [], "progress_line_layer": 0, "current_node": null},
+		"commanders": [{
+			"id": "cmdr_c", "name": "Gamma", "unit_class": "riot", "level": 1,
+			"trait_id": null, "relic_id": "reanimation_kit", "alive": true, "unit_count": 3,
+		}],
+		"total_safehouses_saved": 0, "ability_unlocks": {},
+	}
+	var loaded := RunState.from_save_dict(v3_dict)
+	reporter.expect_false(loaded.commanders[0].relic_charge_used(), "a v3 save (no relic_charge_used key) defaults to an unused charge")
 
 static func _test_unlock_ability_persists_flag(reporter: TestReporter) -> void:
 	var run_state := RunState.new_run(1, "normal", 0)

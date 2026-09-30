@@ -23,6 +23,7 @@ const TestSaveLoadRoundtripScript := preload("res://tests/test_save_load_roundtr
 const TestCommanderExposureScript := preload("res://tests/test_commander_exposure.gd")
 const TestWaveControllerScript := preload("res://tests/test_wave_controller.gd")
 const TestTraitsScript := preload("res://tests/test_traits.gd")
+const TestRelicsScript := preload("res://tests/test_relics.gd")
 
 func _initialize() -> void:
 	var reporter = TestReporterScript.new()
@@ -35,6 +36,7 @@ func _initialize() -> void:
 	TestCommanderExposureScript.run(reporter)
 	TestWaveControllerScript.run(reporter)
 	TestTraitsScript.run(reporter)
+	TestRelicsScript.run(reporter)
 
 	reporter.print_summary()
 	quit(0 if reporter.all_passed() else 1)

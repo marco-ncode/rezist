@@ -32,6 +32,7 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 		if enemy.attack_cooldown_remaining <= 0.0:
 			var rng: SimRng = combat_context.get("rng")
 			var trait_data: TraitData = combat_context.get("trait_data")
+			var relic_data: RelicData = combat_context.get("relic_data")
 			var is_frontal: bool = _is_frontal_attack(enemy, target_unit)
 			var unit_traits: Array = combat_context.get("unit_traits_by_id", {}).get(target_unit.id, [])
 			var result: CombatResult = CombatResolver.resolve_engagement(
@@ -40,7 +41,10 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 				{"is_frontal": is_frontal, "rng": rng, "trait_data": trait_data}
 			)
 			if not result.blocked:
-				target_unit.apply_damage(result.damage_dealt)
+				# target_unit is a Unit or an exposed Commander (RZ-142),
+				# duck-typed — relic_data is only consulted by Commander's
+				# Reanimation Kit check (RZ-109), ignored by Unit's.
+				target_unit.apply_damage(result.damage_dealt, relic_data)
 			enemy.attack_cooldown_remaining = Enemy.ATTACK_INTERVAL
 			events["attacked_unit"] = target_unit
 			events["result"] = result
