@@ -46,6 +46,10 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 				# Reanimation Kit check (RZ-109), ignored by Unit's.
 				target_unit.apply_damage(result.damage_dealt, relic_data)
 			enemy.attack_cooldown_remaining = Enemy.ATTACK_INTERVAL
+			# RZ-105: spends a burst-then-melee enemy's one-time ranged
+			# attack (a no-op for every other enemy type) whether or not
+			# the hit landed -- the throw itself is still spent either way.
+			enemy.mark_burst()
 			events["attacked_unit"] = target_unit
 			events["result"] = result
 		return events
@@ -64,6 +68,7 @@ static func tick_enemy(enemy: Enemy, delta: float, grid: TacticalGrid,
 			if safehouse != null:
 				safehouse.take_hit()
 				enemy.attack_cooldown_remaining = Enemy.ATTACK_INTERVAL
+				enemy.mark_burst()
 				events["attacked_safehouse"] = safehouse
 		return events
 

@@ -20,6 +20,15 @@ var knockback_immune: bool
 var is_boss: bool
 var position: Vector2i
 var attack_cooldown_remaining: float = 0.0
+## RZ-105 (Thrower): a one-time ranged burst that then closes to melee for a
+## weaker follow-up (docs/BALANCE.md's "Burst then closes to melee"). 0
+## (the default for every other enemy type) means "no burst-then-melee
+## behavior" -- effective_range()/effective_damage() are then always just
+## `range`/`damage`, so this is a no-op for every type but Thrower. Read
+## generically off the declared `melee_followup_damage` data field, never
+## special-cased by enemy id (ADR-0006).
+var melee_followup_damage: int = 0
+var _has_burst := false
 var _path: Array = []
 var _path_index: int = 0
 var _path_progress: float = 0.0
@@ -42,6 +51,7 @@ func _init(p_id: String, enemy_entry: Dictionary, p_position: Vector2i,
 	can_cross_gaps = enemy_entry.get("can_cross_gaps", false)
 	knockback_immune = enemy_entry.get("knockback_immune", false)
 	is_boss = enemy_entry.get("is_boss", false)
+	melee_followup_damage = int(round(enemy_entry.get("melee_followup_damage", 0) * damage_mult))
 	position = p_position
 
 func get_position() -> Vector2i:
@@ -55,7 +65,7 @@ func apply_damage(amount: int) -> void:
 
 func to_combat_data() -> Dictionary:
 	return {
-		"damage": damage,
+		"damage": effective_damage(),
 		"attack_type": attack_type,
 		"armor_type": "none",
 		"blocks_ranged_frontal": blocks_ranged_frontal,
@@ -63,6 +73,32 @@ func to_combat_data() -> Dictionary:
 		"knockback_immune": knockback_immune,
 		"traits": [],
 	}
+
+## Once a burst-then-melee enemy (RZ-105) has spent its ranged burst, it
+## deals melee_followup_damage instead of its base damage on every
+## subsequent hit. A plain 0 (every other enemy type) always falls through
+## to `damage`, unconditionally of `_has_burst`.
+func effective_damage() -> int:
+	if melee_followup_damage > 0 and _has_burst:
+		return melee_followup_damage
+	return damage
+
+## Mirrors effective_damage(): a burst-then-melee enemy closes to melee
+## range (1 tile) for its follow-up, instead of continuing to attack from
+## its full ranged `range`. `in_range_of()` (below) reads this, not `range`
+## directly, so EnemyAI's existing "advance if not in range" logic (RZ-049)
+## naturally makes the enemy path in the rest of the way once its
+## effective range shrinks -- no new movement code needed.
+func effective_range() -> int:
+	if melee_followup_damage > 0 and _has_burst:
+		return 1
+	return range
+
+## Called once per attack round (whether or not the hit lands/is blocked --
+## the ranged burst is spent either way, docs/BALANCE.md's "single use").
+## A no-op for every enemy type without melee_followup_damage declared.
+func mark_burst() -> void:
+	_has_burst = true
 
 func mover_type() -> String:
 	return "leaper" if can_cross_gaps else "ground"
@@ -97,4 +133,4 @@ func distance_to(target: Vector2i) -> int:
 	return absi(position.x - target.x) + absi(position.y - target.y)
 
 func in_range_of(target: Vector2i) -> bool:
-	return distance_to(target) <= range
+	return distance_to(target) <= effective_range()

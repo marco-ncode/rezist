@@ -25,6 +25,7 @@ const TestWaveControllerScript := preload("res://tests/test_wave_controller.gd")
 const TestTraitsScript := preload("res://tests/test_traits.gd")
 const TestRelicsScript := preload("res://tests/test_relics.gd")
 const TestAbilitiesScript := preload("res://tests/test_abilities.gd")
+const TestEnemyAIScript := preload("res://tests/test_enemy_ai.gd")
 
 func _initialize() -> void:
 	var reporter = TestReporterScript.new()
@@ -39,6 +40,7 @@ func _initialize() -> void:
 	TestTraitsScript.run(reporter)
 	TestRelicsScript.run(reporter)
 	TestAbilitiesScript.run(reporter)
+	TestEnemyAIScript.run(reporter)
 
 	reporter.print_summary()
 	quit(0 if reporter.all_passed() else 1)
