@@ -16,7 +16,8 @@
           "start_time": 45.0,
           "spawns": [
             { "enemy_id": "walker", "count": 5, "interval": 0.8, "entry_point": "any" },
-            { "enemy_id": "riot_zombie", "count": 2, "interval": 2.0, "entry_point": "any" }
+            { "enemy_id": "riot_zombie", "count": 2, "interval": 2.0, "entry_point": "any" },
+            { "enemy_id": "spitter", "count": 2, "interval": 1.5, "entry_point": "any" }
           ]
         },
         {

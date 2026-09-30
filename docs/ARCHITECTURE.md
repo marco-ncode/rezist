@@ -151,6 +151,8 @@ All three share the same shape: read `context.get("enemies"/"rng"/"trait_data"/"
 
 **Depends on:** `core/grid/`, `core/pathfinding/`, `data_runtime/EnemyData.gd`, `data_runtime/DifficultyData.gd`.
 
+**On `behavior` (RZ-103):** `Enemy.behavior` is stored but never actually branched on anywhere in `EnemyAI.gd` — the single aggro-range/attack-if-in-range/advance-otherwise rule, combined with each type's own `range`/`speed`/`damage`/`attack_type`, already produces the distinct feel a `"ranged_kite"` Spitter needs vs. a `"tank_advance"` Brute, with zero per-type code (ADR-0006). This means a new enemy type reaching a real mission is purely a `data/waves.json` question — does any `wave_set` a played district actually uses spawn it — never an `EnemyAI.gd` one. Spitter's own `data/enemies.json` entry existed complete from the original bootstrap; its only real gap was that no `wave_set` the vertical slice's hardcoded `"residential"` district plays (`district_default_3wave`) spawned it, fixed by adding it to that wave_set's wave 2.
+
 **Invariants:** behavior per enemy `type` is table-driven off `data/enemies.json.behavior` enum (`swarm`, `ranged_kite`, `tank_advance`, `leap_flank`, `siege_boss`), not per-type subclasses, keeping new enemy types data-only additions.
 
 ---
