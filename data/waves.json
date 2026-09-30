@@ -8,7 +8,8 @@
           "index": 1,
           "start_time": 5.0,
           "spawns": [
-            { "enemy_id": "walker", "count": 6, "interval": 1.0, "entry_point": "any" }
+            { "enemy_id": "walker", "count": 6, "interval": 1.0, "entry_point": "any" },
+            { "enemy_id": "leaper", "count": 2, "interval": 3.0, "entry_point": "any" }
           ]
         },
         {
