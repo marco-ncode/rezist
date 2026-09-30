@@ -7,9 +7,7 @@ class_name AbilityRegistry
 extends RefCounted
 
 # effect enum (schemas/unit_abilities.schema.json) -> implementing class
-const IMPLEMENTED_EFFECTS := ["plunge_damage_knockback"]
-# Not yet implemented in code (tracked as RZ-048 in docs/BACKLOG.md):
-#   "focused_ranged_burst" (Focused Volley), "line_impale_charge" (Line Charge)
+const IMPLEMENTED_EFFECTS := ["plunge_damage_knockback", "focused_ranged_burst", "line_impale_charge"]
 
 var _abilities: Dictionary = {} # ability id -> Ability instance
 
@@ -20,6 +18,10 @@ func _init(ability_data: AbilityData) -> void:
 		match effect:
 			"plunge_damage_knockback":
 				_abilities[ability_id] = BreachAbility.new(ability_id, entry)
+			"focused_ranged_burst":
+				_abilities[ability_id] = FocusedVolleyAbility.new(ability_id, entry)
+			"line_impale_charge":
+				_abilities[ability_id] = LineChargeAbility.new(ability_id, entry)
 			_:
 				pass # unimplemented effect; validated separately at boot
 

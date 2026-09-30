@@ -128,7 +128,14 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 
 **Heavy Load (RZ-108):** `activate()` only restarts the cooldown and (re)grants `Squad.ability_charges_remaining` (from the `ability_extra_uses` modifier) when the cooldown is already at 0 — i.e. a fresh cycle. An activation spent on a carried-over charge decrements `ability_charges_remaining` without touching the already-counting-down cooldown. This depends on `Squad.tick()` actually decrementing `ability_cooldown_remaining` every frame, which it previously did not (RZ-145 — any ability became permanently unusable after its first activation; fixed alongside RZ-108).
 
-**Invariants:** every ability id referenced in `data/unit_abilities.json` must have a matching registered `Ability` implementation, checked at boot by `DataLoader` (fail fast, not silently).
+**Implementations (all 3 done as of RZ-048):**
+- `BreachAbility.gd` (Riot, `effect: "plunge_damage_knockback"`) — elevation-gated plunge: only usable if the source unit's tile is `min_elevation_delta` or more above `target_tile`; damages every enemy within `radius`, then moves the squad there.
+- `FocusedVolleyAbility.gd` (Marksman, `effect: "focused_ranged_burst"`) — stationary ranged burst: damages every enemy within `radius` of `target_tile`, squad does not move. `data.ignores_partial_cover` is a documented no-op (no cover mechanic exists anywhere in the sim).
+- `LineChargeAbility.gd` (Barricade, `effect: "line_impale_charge"`) — computes a straight 8-directional line of `line_length` tiles from the squad's position toward `target_tile` (hand-written sign, not a Godot built-in — same verify-don't-assume caution as RZ-143), damages every enemy on it, then advances the squad along it. `data.knockback_strength` is a documented no-op (nothing reads `CombatResult.knockback_vector` to displace an enemy, same gap Breach's own knockback intent has).
+
+All three share the same shape: read `context.get("enemies"/"rng"/"trait_data"/"grid")`, apply a `damage_multiplier` to the source unit's `to_combat_data()` before calling `CombatResolver.resolve_engagement()` per affected enemy — no special-casing beyond each class's own geometry (elevation delta, radius, or line), matching the trait/relic "read the declared data field generically" pattern (§11).
+
+**Invariants:** every ability id referenced in `data/unit_abilities.json` must have a matching registered `Ability` implementation, checked at boot by `DataLoader` (fail fast, not silently) — as of RZ-048 this is unconditionally true for all 3 current abilities, so `DataLoader._validate_ability_implementations()`'s assertion no longer has a standing exception to log around.
 
 **Note:** whether a squad is *allowed* to use its class's ability at all (level 2+ and purchased, RZ-144) is a `scripts/mission/MissionController.gd` concern (`_squad_ability_unlocked()`, §12), not something `AbilityRegistry`/`Ability` itself knows about — this layer only implements the effect once activation is already permitted.
 
