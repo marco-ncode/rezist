@@ -22,6 +22,10 @@ var units: Array = [] # Array[Unit]
 var base_max_size: int
 var _unit_paths: Dictionary = {} # unit.id -> {"path": Array, "index": int, "progress": float}
 var ability_cooldown_remaining: float = 0.0
+## RZ-108 (Heavy Load): extra activations usable while on cooldown, granted
+## when a fresh cooldown cycle starts and consumed without restarting it.
+## See core/abilities/Ability.gd for the activation logic that reads this.
+var ability_charges_remaining: int = 0
 var _is_exposed := false # RZ-142: true once commander_lost has fired
 
 func _init(p_id: String, p_commander: Commander, p_unit_class: String, p_level: int,
@@ -94,6 +98,11 @@ func tick(delta: float, grid: TacticalGrid, combat_context: Dictionary) -> void:
 	var rng: SimRng = combat_context.get("rng")
 	var trait_data: TraitData = combat_context.get("trait_data")
 	var traits := commander.traits()
+	var speed_mult := _aggregate_move_speed_mult(traits, trait_data)
+
+	# RZ-108: this was previously never decremented, permanently locking out
+	# the squad's ability after its first use for the rest of the mission.
+	ability_cooldown_remaining = maxf(0.0, ability_cooldown_remaining - delta)
 
 	for unit in units:
 		if not unit.is_alive():
@@ -112,9 +121,20 @@ func tick(delta: float, grid: TacticalGrid, combat_context: Dictionary) -> void:
 					target.apply_damage(result.damage_dealt)
 				unit.attack_cooldown_remaining = ATTACK_INTERVAL
 		else:
-			_advance_unit(unit, delta, grid)
+			_advance_unit(unit, delta, grid, speed_mult)
 
 	_prune_dead_units()
+
+## Fleet of Foot: multiplies the squad's movement speed. Read generically
+## (ARCHITECTURE.md §11) so a new movement-speed trait never needs a new
+## call site, only a `move_speed_mult` modifier entry in data/traits.json.
+static func _aggregate_move_speed_mult(traits: Array, trait_data: TraitData) -> float:
+	if trait_data == null:
+		return 1.0
+	var result := 1.0
+	for trait_id in traits:
+		result *= trait_data.get_modifier(trait_id, "move_speed_mult", 1.0)
+	return result
 
 func _find_nearest_enemy_in_range(unit: Unit, enemies: Array) -> Variant:
 	var nearest = null
@@ -128,7 +148,7 @@ func _find_nearest_enemy_in_range(unit: Unit, enemies: Array) -> Variant:
 			nearest_dist = dist
 	return nearest
 
-func _advance_unit(unit: Unit, delta: float, grid: TacticalGrid) -> void:
+func _advance_unit(unit: Unit, delta: float, grid: TacticalGrid, speed_mult: float = 1.0) -> void:
 	if not _unit_paths.has(unit.id):
 		return
 	var path_state: Dictionary = _unit_paths[unit.id]
@@ -144,7 +164,7 @@ func _advance_unit(unit: Unit, delta: float, grid: TacticalGrid) -> void:
 	if cost <= 0.0:
 		cost = 1.0
 
-	path_state["progress"] += (unit.speed * delta) / cost
+	path_state["progress"] += (unit.speed * speed_mult * delta) / cost
 	if path_state["progress"] >= 1.0:
 		path_state["progress"] = 0.0
 		path_state["index"] += 1

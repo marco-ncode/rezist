@@ -122,6 +122,10 @@ func _spawn_squads() -> void:
 	var roster: Array = GameState.run_state.alive_commanders()
 	for i in roster.size():
 		var commander: Commander = roster[i]
+		# ADR-0007: commander HP is never persisted across missions — always
+		# full-HP at mission start. Previously nothing called this, so a
+		# commander carried over whatever HP they ended the last mission at.
+		commander.heal_to_full()
 		var meta := GameState.run_state.get_roster_meta(commander.id)
 		var unit_class: String = meta.get("unit_class", "riot")
 		var level: int = meta.get("level", 1)
@@ -387,7 +391,12 @@ func _refresh_hud() -> void:
 	if _selected_squad_index >= 0 and not _squads[_selected_squad_index].is_wiped():
 		var selected_squad: Squad = _squads[_selected_squad_index]
 		var ability_unlocked := _squad_ability_unlocked(selected_squad)
-		ability_ready = ability_unlocked and selected_squad.ability_cooldown_remaining <= 0.0
+		# RZ-108: a Heavy Load charge makes the ability usable even while
+		# ability_cooldown_remaining > 0 (Ability.can_activate()), so the
+		# HUD readiness indicator has to check the same OR-condition.
+		ability_ready = ability_unlocked and (
+			selected_squad.ability_cooldown_remaining <= 0.0 or selected_squad.ability_charges_remaining > 0
+		)
 		if not ability_unlocked:
 			ability_label = "Ability (Locked)"
 	if _ability_target_mode:

@@ -83,13 +83,14 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 **Public API:**
 - `Squad.new(id: String, commander: Commander, unit_class: String, level: int, unit_data: UnitData, spawn_positions: Array, deployment_center: Vector2i = Vector2i.ZERO)` — `deployment_center` is where `commander.position` defaults to for a squad that starts with 0 units (a roster entry that lost all its soldiers in a previous mission); otherwise the commander starts at `spawn_positions[0]`.
 - `Squad.order_move_to(target_tile: Vector2i, grid) -> void` — the **only** player-facing command (calls `AStarPathfinder`'s static API internally).
-- `Squad.tick(delta, grid, combat_context) -> void` — autonomous per-unit behavior (advance, engage nearest valid target in range, retreat if isolated). Once `units` is empty, transitions the squad into "exposed" exactly once (see `commander_lost` below).
+- `Squad.tick(delta, grid, combat_context) -> void` — autonomous per-unit behavior (advance, engage nearest valid target in range, retreat if isolated). Once `units` is empty, transitions the squad into "exposed" exactly once (see `commander_lost` below). Movement speed is `unit.speed * move_speed_mult`, where `move_speed_mult` is the Fleet of Foot trait's modifier aggregated once per tick (RZ-108) — read generically, same pattern as every other trait modifier (ADR-0006).
 - `Squad.unit_count() -> int` (this **is** the squad's visible "health" per GDD pillar 3)
 - `Squad.is_wiped() -> bool`
 - `Squad.commander_lost(squad: Squad)` signal — fires exactly once, the tick a squad's rank-and-file are all dead (or immediately, for a squad that starts with 0 units). `MissionController._on_commander_exposed()` reacts by making the commander visible on the grid.
 - `Squad.disconnect_commander_signal() -> void` — **must** be called (e.g. from the owning scene's `_exit_tree()`) when a Squad is discarded, if `commander` outlives it. Since RZ-141, `Commander` objects persist across missions in `RunState.commanders`; `Squad._init()` connects `commander.died` to a bound method on itself, and that connection holds a live reference to the Squad. Skipping this leaks one stale Squad (and its Units) per mission — `RefCounted` has no cycle collector.
 - `Commander.die() -> void` → triggers permadeath (emits `died`, consumed by both `Squad._on_commander_died` — mission-local `wiped` signal — and `core/run/RunState.on_commander_died` when the commander came from a `RunState` roster).
-- `Commander.to_combat_data(traits: Array) -> Dictionary` — duck-typed combat interface (RZ-142), same dictionary shape `Unit.to_combat_data()` produces. Lets `EnemyAI` target an exposed commander with zero special-casing (ADR-0006). Commander deals `damage: 0` — per GDD's "commander fights on alone" rule they don't fight back by default; only the (not yet implemented) Mountain trait would change that.
+- `Commander.heal_to_full() -> void` (RZ-108/RZ-146) — resets `hp` to `max_hp`. Called once per roster commander from `MissionController._spawn_squads()` at mission start, per ADR-0007 ("commander HP is never persisted across missions"). Previously nothing called this at all, silently violating that contract.
+- `Commander.to_combat_data(traits: Array) -> Dictionary` — duck-typed combat interface (RZ-142), same dictionary shape `Unit.to_combat_data()` produces. Lets `EnemyAI` target an exposed commander with zero special-casing (ADR-0006). `damage` is `Commander.melee_damage` (0 unless the Mountain trait's `mountain_damage` modifier set it in `_init()`, RZ-108) — per GDD's "commander fights on alone" rule they don't fight back by default.
 
 **Depends on:** `core/grid/`, `core/pathfinding/`, `core/combat/CombatResolver.gd`, `data_runtime/UnitData.gd`, `data_runtime/TraitData.gd`.
 
@@ -117,11 +118,13 @@ Autoloads (Godot singletons, `game/autoload/`) are the only classes allowed to b
 
 **Public API:**
 - `AbilityRegistry.get_ability(id: String) -> Ability`
-- `Ability.can_activate(squad, context) -> bool`
+- `Ability.can_activate(squad, context) -> bool` — true on a fresh cooldown (`Squad.ability_cooldown_remaining <= 0.0`) **or** while a Heavy Load charge is still available (`Squad.ability_charges_remaining > 0`, RZ-108).
 - `Ability.activate(squad, target, context) -> Array[CombatResult]`
 - `Ability.cooldown_remaining(squad) -> float`
 
-**Depends on:** `core/combat/CombatResolver.gd`, `core/squad/`, `data_runtime/AbilityData.gd`, `data_runtime/TraitData.gd` (Energetic/Skillful/Heavy Load modifiers).
+**Depends on:** `core/combat/CombatResolver.gd`, `core/squad/`, `data_runtime/AbilityData.gd`, `data_runtime/TraitData.gd` (Energetic/Skillful/Heavy Load modifiers — all three now actually wired, RZ-108).
+
+**Heavy Load (RZ-108):** `activate()` only restarts the cooldown and (re)grants `Squad.ability_charges_remaining` (from the `ability_extra_uses` modifier) when the cooldown is already at 0 — i.e. a fresh cycle. An activation spent on a carried-over charge decrements `ability_charges_remaining` without touching the already-counting-down cooldown. This depends on `Squad.tick()` actually decrementing `ability_cooldown_remaining` every frame, which it previously did not (RZ-145 — any ability became permanently unusable after its first activation; fixed alongside RZ-108).
 
 **Invariants:** every ability id referenced in `data/unit_abilities.json` must have a matching registered `Ability` implementation, checked at boot by `DataLoader` (fail fast, not silently).
 

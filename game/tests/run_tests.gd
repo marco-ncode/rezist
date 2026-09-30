@@ -22,6 +22,7 @@ const TestProcgenDeterminismScript := preload("res://tests/test_procgen_determin
 const TestSaveLoadRoundtripScript := preload("res://tests/test_save_load_roundtrip.gd")
 const TestCommanderExposureScript := preload("res://tests/test_commander_exposure.gd")
 const TestWaveControllerScript := preload("res://tests/test_wave_controller.gd")
+const TestTraitsScript := preload("res://tests/test_traits.gd")
 
 func _initialize() -> void:
 	var reporter = TestReporterScript.new()
@@ -33,6 +34,7 @@ func _initialize() -> void:
 	TestSaveLoadRoundtripScript.run(reporter)
 	TestCommanderExposureScript.run(reporter)
 	TestWaveControllerScript.run(reporter)
+	TestTraitsScript.run(reporter)
 
 	reporter.print_summary()
 	quit(0 if reporter.all_passed() else 1)

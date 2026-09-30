@@ -22,24 +22,50 @@ var relic_id: String = ""
 var hp: int
 var max_hp: int
 var alive: bool = true
+## RZ-108 (Mountain): melee damage this commander deals when exposed and
+## fighting last-stand (see to_combat_data()). Stays 0 for every commander
+## without the Mountain trait, matching GDD's default "commander fights on
+## alone" rule.
+var melee_damage: int = 0
 
 ## RZ-142: last-stand combat. Once a squad's rank-and-file are all dead
 ## (Squad.commander_lost), the commander stands alone at `position` and
 ## becomes a valid EnemyAI target — duck-typed the same way Unit/Enemy are
 ## (get position via the `position` field, `is_alive()`, `apply_damage()`,
 ## `to_combat_data()`). By default the commander does not fight back
-## (`damage: 0` below) per GDD's "commander fights on alone" rule — only
-## the (not yet implemented) Mountain trait changes that.
+## (`melee_damage` stays 0) per GDD's "commander fights on alone" rule —
+## only the Mountain trait (RZ-108) changes that, via `melee_damage` above.
 var position: Vector2i = Vector2i.ZERO
 var facing: Vector2i = Vector2i(0, 1)
 
-func _init(p_id: String, p_display_name: String, p_max_hp: int, p_trait_id: String = "", p_relic_id: String = "") -> void:
+## `p_trait_data` is optional (core/ classes may accept other core/data_runtime
+## objects passed in by a caller, ADR-0002) — when given and `p_trait_id` has
+## a Mountain-style `mountain_hp`/`mountain_damage` modifier, it overrides
+## `p_max_hp` and sets `melee_damage` accordingly. No trait-assignment UI
+## exists yet (docs/BACKLOG.md RZ-087/RZ-108), so every current call site
+## passes trait_id = "" and this is a no-op in practice, same as the other
+## traits wired this session.
+func _init(p_id: String, p_display_name: String, p_max_hp: int, p_trait_id: String = "",
+		p_relic_id: String = "", p_trait_data: TraitData = null) -> void:
 	id = p_id
 	display_name = p_display_name
-	max_hp = p_max_hp
-	hp = p_max_hp
 	trait_id = p_trait_id
 	relic_id = p_relic_id
+	max_hp = p_max_hp
+	if p_trait_data != null and p_trait_id != "":
+		var mountain_hp: Variant = p_trait_data.get_modifier(p_trait_id, "mountain_hp", null)
+		if mountain_hp != null:
+			max_hp = int(mountain_hp)
+		melee_damage = int(p_trait_data.get_modifier(p_trait_id, "mountain_damage", 0))
+	hp = max_hp
+
+## Restores this commander to full HP. Called at the start of every mission
+## (ADR-0007: commander HP is never persisted across missions) — previously
+## nothing ever called this, so a commander stayed at whatever HP they ended
+## the previous mission at, silently violating the documented contract.
+func heal_to_full() -> void:
+	if alive:
+		hp = max_hp
 
 func apply_damage(amount: int) -> void:
 	if not alive:
@@ -73,10 +99,11 @@ func is_alive() -> bool:
 
 ## Dictionary shape consumed by CombatResolver as a `defender` — matches
 ## Unit.to_combat_data()'s shape so EnemyAI can target an exposed commander
-## with no special-casing (ADR-0006).
+## with no special-casing (ADR-0006). `damage` is `melee_damage` (0 unless
+## Mountain) so a Mountain commander fights back in their last-stand.
 func to_combat_data(p_traits: Array) -> Dictionary:
 	return {
-		"damage": 0,
+		"damage": melee_damage,
 		"attack_type": "melee",
 		"armor_type": "none",
 		"blocks_ranged_frontal": false,
